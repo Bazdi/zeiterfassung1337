@@ -1,0 +1,148 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  username      String   @unique
+  password_hash String
+  role          Role     @default(USER)
+  active        Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  last_login_at DateTime?
+
+  // Relations
+  time_entries  TimeEntry[]
+  audit_logs    AuditLog[]
+  absences      Absence[]
+  created_entries TimeEntry[] @relation("CreatedEntries")
+  updated_entries TimeEntry[] @relation("UpdatedEntries")
+  created_absences Absence[] @relation("CreatedAbsences")
+
+  @@map("users")
+}
+
+model TimeEntry {
+  id              String      @id @default(cuid())
+  user_id         String
+  start_utc       DateTime
+  end_utc         DateTime?
+  duration_minutes Int?
+  category        Category    @default(REGULAR)
+  note            String?
+  project_tag     String?
+  created_by      String?
+  updated_by      String?
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
+
+  // Relations
+  user            User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  creator         User?       @relation("CreatedEntries", fields: [created_by], references: [id])
+  updater         User?       @relation("UpdatedEntries", fields: [updated_by], references: [id])
+
+  @@map("time_entries")
+}
+
+model Rate {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  label        String
+  multiplier   Float?
+  hourly_rate  Float?
+  applies_to   String   // weekend|holiday|night|manual|sick|vacation
+  time_window  String?  // JSON string for time window specification
+  priority     Int      @default(0)
+  is_base_rate Boolean  @default(false) // marks the base hourly rate
+  fixed_amount Float?   // for fixed amounts like sick/vacation pay
+  fixed_hours  Float?   // for fixed hours like vacation days
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("rates")
+}
+
+model Holiday {
+  id       String   @id @default(cuid())
+  date     DateTime // Only date part is used
+  region   String   @default("NW")
+  name     String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@unique([date, region])
+  @@map("holidays")
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actor_user_id String
+  entity_type String   // User, TimeEntry, Rate, Holiday, Setting
+  entity_id   String
+  action      String   // CREATE, UPDATE, DELETE, LOGIN, LOGOUT, etc.
+  before_json String?  // JSON string of previous state
+  after_json  String?  // JSON string of new state
+  created_at  DateTime @default(now())
+
+  // Relations
+  actor       User     @relation(fields: [actor_user_id], references: [id])
+
+  @@map("audit_log")
+}
+
+model Absence {
+  id          String   @id @default(cuid())
+  user_id     String
+  date        DateTime // Only date part is used
+  type        AbsenceType // sick|vacation
+  hours       Float    // hours for this absence
+  amount      Float    // monetary value
+  note        String?
+  created_by  String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  creator     User?    @relation("CreatedAbsences", fields: [created_by], references: [id])
+
+  @@unique([user_id, date, type])
+  @@map("absences")
+}
+
+model Setting {
+  key         String   @id
+  value_json  String   // JSON string
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@map("settings")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Category {
+  REGULAR
+  WEEKEND
+  HOLIDAY
+  VACATION
+  SICKNESS
+  NIGHT
+}
+
+enum AbsenceType {
+  SICK
+  VACATION
+}
