@@ -8,11 +8,13 @@ interface ReportsData {
     totalMinutes: number
     workDayCount: number
     avgMinutesPerDay: number
+    pauseMinutes?: number
   }
   month: {
     totalMinutes: number
     workDayCount: number
     avgMinutesPerDay: number
+    pauseMinutes?: number
   }
 }
 
@@ -30,8 +32,10 @@ export function useAllReports() {
       return response.json()
     },
     enabled: !!session,
-    staleTime: 0, // Always fetch fresh data
-    refetchOnWindowFocus: true,
+    // Cut mobile data usage: cache briefly, avoid focus refetch
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   // Function to invalidate reports cache

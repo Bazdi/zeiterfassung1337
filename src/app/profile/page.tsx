@@ -77,7 +77,7 @@ export default function Profile() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-4">
-                <Link href="/">
+                <Link href="/" prefetch={false}>
                   <Button variant="outline" size="sm">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Zurück
@@ -86,14 +86,14 @@ export default function Profile() {
                 <h1 className="text-xl font-semibold text-gray-900">Profil</h1>
               </div>
               <div className="flex items-center space-x-4">
-                <Link href="/time-entries">
+                <Link href="/time-entries" prefetch={false}>
                   <Button variant="outline" size="sm">
                     <List className="h-4 w-4 mr-2" />
                     Einträge
                   </Button>
                 </Link>
                 {session.user.role === "ADMIN" && (
-                  <Link href="/admin">
+                  <Link href="/admin" prefetch={false}>
                     <Button variant="outline" size="sm">
                       <Settings className="h-4 w-4 mr-2" />
                       Admin

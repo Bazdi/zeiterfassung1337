@@ -48,6 +48,8 @@ export function useSalary(year?: number, month?: number) {
     },
     enabled: !!session,
     staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
   })
 
   return {

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+export const runtime = "nodejs"
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -48,7 +49,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         hourly_rate,
         applies_to,
         time_window: time_window ? JSON.stringify(time_window) : null,
-        is_base_rate: is_base_rate || false,
+        is_base_rate: !!is_base_rate,
         fixed_amount,
         fixed_hours,
         priority: priority || 0,
@@ -85,9 +86,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
       )
     }
 
-    await db.rate.delete({
-      where: { id: params.id },
-    })
+    await db.rate.delete({ where: { id: params.id } })
 
     return NextResponse.json({ success: true })
   } catch (error) {

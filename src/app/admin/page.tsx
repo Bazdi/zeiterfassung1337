@@ -5,6 +5,10 @@ import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { LogOut, User, Calendar, List, Settings, UserCircle, History, Users, FileText, ArrowLeft, Euro, Plus, Edit, Trash2 } from "lucide-react"
 import { AuthGuard } from "@/components/auth-guard"
@@ -24,6 +28,7 @@ interface TimeEntry {
   start_utc: string
   end_utc: string | null
   duration_minutes: number | null
+  pause_total_minutes?: number | null
   category: string
   note: string | null
   project_tag: string | null
@@ -53,6 +58,10 @@ export default function Admin() {
   const [entries, setEntries] = useState<TimeEntry[]>([])
   const [rates, setRates] = useState<Rate[]>([])
   const [loading, setLoading] = useState(true)
+  const [editingEntry, setEditingEntry] = useState<TimeEntry | null>(null)
+  const [entryForm, setEntryForm] = useState({ start_utc: "", end_utc: "", category: "REGULAR", note: "", project_tag: "" })
+  const [editingRate, setEditingRate] = useState<Rate | null>(null)
+  const [rateForm, setRateForm] = useState({ code: "", label: "", multiplier: "", hourly_rate: "", applies_to: "manual", time_window: "", is_base_rate: false as boolean, fixed_amount: "", fixed_hours: "", priority: 0 })
 
   useEffect(() => {
     if (activeTab === "users") {
@@ -90,6 +99,66 @@ export default function Admin() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const openEntryEdit = (e: TimeEntry) => {
+    setEditingEntry(e)
+    setEntryForm({
+      start_utc: e.start_utc ? e.start_utc.slice(0,16) : "",
+      end_utc: e.end_utc ? e.end_utc.slice(0,16) : "",
+      category: e.category,
+      note: e.note || "",
+      project_tag: e.project_tag || "",
+    })
+  }
+
+  const saveEntry = async () => {
+    if (!editingEntry) return
+    const res = await fetch(`/api/time-entries/${editingEntry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entryForm) })
+    if (res.ok) { setEditingEntry(null); fetchEntries() }
+  }
+
+  const deleteEntry = async (id: string) => {
+    if (!confirm('Eintrag wirklich löschen?')) return
+    const res = await fetch(`/api/time-entries/${id}`, { method: 'DELETE' })
+    if (res.ok) fetchEntries()
+  }
+
+  const openRateEdit = (r: Rate) => {
+    setEditingRate(r)
+    setRateForm({
+      code: r.code,
+      label: r.label,
+      multiplier: r.multiplier?.toString() || "",
+      hourly_rate: r.hourly_rate?.toString() || "",
+      applies_to: r.applies_to,
+      time_window: r.time_window || "",
+      is_base_rate: r.is_base_rate,
+      fixed_amount: r.fixed_amount?.toString() || "",
+      fixed_hours: r.fixed_hours?.toString() || "",
+      priority: r.priority,
+    })
+  }
+
+  const saveRate = async () => {
+    if (!editingRate) return
+    const body: any = {
+      ...rateForm,
+      multiplier: rateForm.multiplier ? parseFloat(rateForm.multiplier) : null,
+      hourly_rate: rateForm.hourly_rate ? parseFloat(rateForm.hourly_rate) : null,
+      fixed_amount: rateForm.fixed_amount ? parseFloat(rateForm.fixed_amount) : null,
+      fixed_hours: rateForm.fixed_hours ? parseFloat(rateForm.fixed_hours) : null,
+      time_window: rateForm.time_window ? JSON.parse(rateForm.time_window) : null,
+    }
+    const res = await fetch(`/api/admin/rates/${editingRate.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    if (res.ok) { setEditingRate(null); fetchRates() }
+  }
+
+  const removeRate = async (id: string, isBase: boolean) => {
+    if (isBase) return alert('Basis-Stundenlohn kann nicht gelöscht werden')
+    if (!confirm('Lohnsatz wirklich löschen?')) return
+    const res = await fetch(`/api/admin/rates/${id}`, { method: 'DELETE' })
+    if (res.ok) fetchRates()
   }
 
   const fetchRates = async () => {
@@ -167,7 +236,7 @@ export default function Admin() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
               <div className="flex items-center space-x-4">
-                <Link href="/">
+                <Link href="/" prefetch={false}>
                   <Button variant="outline" size="sm">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Zurück
@@ -176,7 +245,7 @@ export default function Admin() {
                 <h1 className="text-xl font-semibold text-gray-900">Admin-Bereich</h1>
               </div>
               <div className="flex items-center space-x-4">
-                <Link href="/profile">
+                <Link href="/profile" prefetch={false}>
                   <Button variant="outline" size="sm">
                     <UserCircle className="h-4 w-4 mr-2" />
                     Profil
@@ -333,10 +402,20 @@ export default function Admin() {
                                 {entry.user.username}
                               </span>
                             </div>
-                            <div className="flex items-center space-x-4">
+                            <div className="flex items-center flex-wrap gap-2">
                               <span className="text-sm text-gray-600">
                                 Dauer: {formatDuration(entry.duration_minutes)}
                               </span>
+                              {entry.pause_started_utc && (
+                                <Badge variant="outline" className="border-orange-300 text-orange-700 bg-orange-50">
+                                  Pause (läuft)
+                                </Badge>
+                              )}
+                              {entry.pause_total_minutes ? (
+                                <Badge variant="secondary" className="text-xs">
+                                  Pause: {formatDuration(entry.pause_total_minutes)}
+                                </Badge>
+                              ) : null}
                             </div>
                             {entry.note && (
                               <p className="text-sm text-gray-700">{entry.note}</p>
@@ -346,10 +425,10 @@ export default function Admin() {
                             )}
                           </div>
                           <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => openEntryEdit(entry)}>
                               Bearbeiten
                             </Button>
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => deleteEntry(entry.id)}>
                               Löschen
                             </Button>
                           </div>
@@ -417,11 +496,11 @@ export default function Admin() {
                             )}
                           </div>
                           <div className="flex space-x-2">
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => openRateEdit(rate)}>
                               <Edit className="h-4 w-4" />
                             </Button>
                             {!rate.is_base_rate && (
-                              <Button variant="outline" size="sm">
+                              <Button variant="outline" size="sm" onClick={() => removeRate(rate.id, rate.is_base_rate)}>
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             )}
@@ -440,6 +519,94 @@ export default function Admin() {
             </div>
           )}
         </main>
+        {/* Entry edit dialog */}
+        <Dialog open={!!editingEntry} onOpenChange={(v) => !v && setEditingEntry(null)}>
+          <DialogContent className="bg-white dark:bg-neutral-900 border shadow-lg">
+            <DialogHeader>
+              <DialogTitle>Zeiteintrag bearbeiten</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Start</Label>
+                <Input type="datetime-local" value={entryForm.start_utc} onChange={(e) => setEntryForm({ ...entryForm, start_utc: e.target.value })} />
+              </div>
+              <div>
+                <Label>Ende</Label>
+                <Input type="datetime-local" value={entryForm.end_utc} onChange={(e) => setEntryForm({ ...entryForm, end_utc: e.target.value })} />
+              </div>
+              <div>
+                <Label>Kategorie</Label>
+                <Input value={entryForm.category} onChange={(e) => setEntryForm({ ...entryForm, category: e.target.value })} />
+              </div>
+              <div>
+                <Label>Notiz</Label>
+                <Textarea value={entryForm.note} onChange={(e) => setEntryForm({ ...entryForm, note: e.target.value })} />
+              </div>
+              <div>
+                <Label>Projekt</Label>
+                <Input value={entryForm.project_tag} onChange={(e) => setEntryForm({ ...entryForm, project_tag: e.target.value })} />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditingEntry(null)}>Abbrechen</Button>
+                <Button onClick={saveEntry}>Speichern</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+        {/* Rate edit dialog */}
+        <Dialog open={!!editingRate} onOpenChange={(v) => !v && setEditingRate(null)}>
+          <DialogContent className="max-w-2xl bg-white dark:bg-neutral-900 border shadow-lg">
+            <DialogHeader>
+              <DialogTitle>Lohnsatz bearbeiten</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <Label>Code</Label>
+                <Input value={rateForm.code} onChange={(e) => setRateForm({ ...rateForm, code: e.target.value })} />
+              </div>
+              <div>
+                <Label>Label</Label>
+                <Input value={rateForm.label} onChange={(e) => setRateForm({ ...rateForm, label: e.target.value })} />
+              </div>
+              <div>
+                <Label>Multiplikator</Label>
+                <Input type="number" step="0.01" value={rateForm.multiplier} onChange={(e) => setRateForm({ ...rateForm, multiplier: e.target.value })} />
+              </div>
+              <div>
+                <Label>Stundenlohn</Label>
+                <Input type="number" step="0.01" value={rateForm.hourly_rate} onChange={(e) => setRateForm({ ...rateForm, hourly_rate: e.target.value })} />
+              </div>
+              <div>
+                <Label>Applies To</Label>
+                <Input value={rateForm.applies_to} onChange={(e) => setRateForm({ ...rateForm, applies_to: e.target.value })} />
+              </div>
+              <div className="sm:col-span-2">
+                <Label>Zeitfenster (JSON)</Label>
+                <Textarea value={rateForm.time_window} onChange={(e) => setRateForm({ ...rateForm, time_window: e.target.value })} />
+              </div>
+              <div>
+                <Label>Fester Betrag</Label>
+                <Input type="number" step="0.01" value={rateForm.fixed_amount} onChange={(e) => setRateForm({ ...rateForm, fixed_amount: e.target.value })} />
+              </div>
+              <div>
+                <Label>Feste Stunden</Label>
+                <Input type="number" step="0.01" value={rateForm.fixed_hours} onChange={(e) => setRateForm({ ...rateForm, fixed_hours: e.target.value })} />
+              </div>
+              <div>
+                <Label>Priorität</Label>
+                <Input type="number" value={String(rateForm.priority)} onChange={(e) => setRateForm({ ...rateForm, priority: Number(e.target.value) })} />
+              </div>
+              <div>
+                <Label>Basis-Stundenlohn</Label>
+                <input type="checkbox" checked={rateForm.is_base_rate} onChange={(e) => setRateForm({ ...rateForm, is_base_rate: e.target.checked })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-4">
+              <Button variant="outline" onClick={() => setEditingRate(null)}>Abbrechen</Button>
+              <Button onClick={saveRate}>Speichern</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </AuthGuard>
   )

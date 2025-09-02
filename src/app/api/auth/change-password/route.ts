@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import bcrypt from "bcryptjs"
+export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
   try {
@@ -52,24 +53,22 @@ export async function POST(request: NextRequest) {
     // Hash new password
     const hashedNewPassword = await bcrypt.hash(newPassword, 12)
 
-    // Update password
-    await db.user.update({
-      where: { id: session.user.id },
-      data: {
-        password_hash: hashedNewPassword,
-      },
-    })
-
-    // Log audit trail
-    await db.auditLog.create({
-      data: {
-        actor_user_id: session.user.id,
-        entity_type: "User",
-        entity_id: user.id,
-        action: "UPDATE",
-        before_json: JSON.stringify({ password_changed: true }),
-        after_json: JSON.stringify({ password_changed: true }),
-      },
+    // Update password + audit trail atomically
+    await db.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: session.user.id },
+        data: { password_hash: hashedNewPassword },
+      })
+      await tx.auditLog.create({
+        data: {
+          actor_user_id: session.user.id,
+          entity_type: "User",
+          entity_id: user.id,
+          action: "UPDATE",
+          before_json: JSON.stringify({ password_changed: true }),
+          after_json: JSON.stringify({ password_changed: true }),
+        },
+      })
     })
 
     return NextResponse.json({ success: true })

@@ -20,6 +20,9 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
     checkOut,
     isCheckingIn,
     isCheckingOut,
+    isPausing,
+    pauseStart,
+    pauseStop,
     formatDuration
   } = useTimeEntries()
 
@@ -30,22 +33,28 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
 
   const handleCheckOut = async () => {
     await checkOut()
+    setRunningSeconds(0)
     onTimeEntryChange?.()
   }
   
   const [currentTime, setCurrentTime] = useState(new Date())
-  const [runningTime, setRunningTime] = useState(0)
+  const [runningSeconds, setRunningSeconds] = useState(0)
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date())
 
-      // Update running time if checked in
+      // Update running work time (with seconds) if checked in
       if (status?.isCheckedIn && status.currentEntry) {
         const startTime = new Date(status.currentEntry.start_utc)
         const now = new Date()
-        const diffMs = now.getTime() - startTime.getTime()
-        setRunningTime(Math.floor(diffMs / (1000 * 60))) // minutes
+        const basePausedMs = (status.currentEntry.pause_total_minutes || 0) * 60_000
+        const currentPaused = status.currentEntry.pause_started_utc ? Math.max(0, now.getTime() - new Date(status.currentEntry.pause_started_utc).getTime()) : 0
+        const effectivePausedMs = basePausedMs + currentPaused
+        const diffMs = Math.max(0, now.getTime() - startTime.getTime() - effectivePausedMs)
+        setRunningSeconds(Math.floor(diffMs / 1000))
+      } else {
+        setRunningSeconds(0)
       }
     }, 1000)
 
@@ -103,6 +112,34 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
   }
 
   const rotations = calculateRotation()
+
+  const isPaused = !!status?.currentEntry?.pause_started_utc
+  const togglePause = () => {
+    if (!status?.isCheckedIn) return
+    if (isPaused) pauseStop()
+    else pauseStart()
+  }
+
+  const formatHMS = (totalSeconds: number) => {
+    const h = Math.floor(totalSeconds / 3600)
+    const m = Math.floor((totalSeconds % 3600) / 60)
+    const s = totalSeconds % 60
+    const hh = h.toString().padStart(2, "0")
+    const mm = m.toString().padStart(2, "0")
+    const ss = s.toString().padStart(2, "0")
+    return `${hh}:${mm}:${ss}`
+  }
+
+  const currentPauseSeconds = (() => {
+    if (!status?.isCheckedIn) return 0
+    const base = (status.currentEntry?.pause_total_minutes || 0) * 60
+    if (status.currentEntry?.pause_started_utc) {
+      return base + Math.floor((Date.now() - new Date(status.currentEntry.pause_started_utc).getTime()) / 1000)
+    }
+    return base
+  })()
+
+  const effectiveCheckedIn = isCheckingIn ? true : isCheckingOut ? false : !!status?.isCheckedIn
 
   return (
     <Card className={`w-full ${className}`}>
@@ -203,42 +240,73 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
           {statusLoading ? (
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
           ) : (
-            <Badge 
-              variant={status?.isCheckedIn ? "default" : "secondary"}
-              className="text-sm px-3 py-1"
-            >
-              {status?.isCheckedIn ? "Eingestempelt" : "Ausgestempelt"}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge 
+                variant={effectiveCheckedIn ? "default" : "secondary"}
+                className="text-sm px-3 py-1"
+              >
+                {effectiveCheckedIn ? "Eingestempelt" : "Ausgestempelt"}
+              </Badge>
+              {effectiveCheckedIn && status.currentEntry?.pause_started_utc && (
+                <Badge variant="outline" className="text-xs px-2 py-0.5 border-orange-300 text-orange-700 bg-orange-50">
+                  Pause
+                </Badge>
+              )}
+            </div>
           )}
 
-          {/* Time Entry Button */}
-          <Button
-            size="lg"
-            className={`
-              w-full max-w-xs h-16 rounded-full text-lg font-semibold
-              transition-all duration-300 transform hover:scale-105
-              ${status?.isCheckedIn 
-                ? 'bg-red-500 hover:bg-red-600 text-white' 
-                : 'bg-green-500 hover:bg-green-600 text-white'
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3 w-full justify-center">
+            <Button
+              size="lg"
+              className={`
+                w-full max-w-xs h-16 rounded-full text-lg font-semibold
+                transition-all duration-300 transform hover:scale-105
+              ${effectiveCheckedIn 
+                  ? 'bg-red-500 hover:bg-red-600 text-white' 
+                  : 'bg-green-500 hover:bg-green-600 text-white'
               }
-            `}
-            onClick={status?.isCheckedIn ? handleCheckOut : handleCheckIn}
-            disabled={isCheckingIn || isCheckingOut || statusLoading}
-          >
-            {isCheckingIn || isCheckingOut ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : status?.isCheckedIn ? (
-              <>
-                <Pause className="h-6 w-6 mr-2" />
-                Check-out
-              </>
-            ) : (
-              <>
-                <Play className="h-6 w-6 mr-2" />
-                Check-in
-              </>
+              `}
+              onClick={effectiveCheckedIn ? handleCheckOut : handleCheckIn}
+              disabled={isCheckingIn || isCheckingOut || statusLoading}
+            >
+              {isCheckingIn || isCheckingOut ? (
+                <Loader2 className="h-6 w-6 animate-spin" />
+              ) : effectiveCheckedIn ? (
+                <>
+                  <Pause className="h-6 w-6 mr-2" />
+                  Check-out
+                </>
+              ) : (
+                <>
+                  <Play className="h-6 w-6 mr-2" />
+                  Check-in
+                </>
+              )}
+            </Button>
+
+            {effectiveCheckedIn && (
+              <Button
+                variant="outline"
+                size="lg"
+                className={`h-16 rounded-full w-32 ${isPaused ? 'border-orange-500 text-orange-600' : ''}`}
+                onClick={togglePause}
+                disabled={isCheckingIn || isCheckingOut || isPausing || statusLoading}
+              >
+                {isPaused ? (
+                  <>
+                    <Play className="h-5 w-5 mr-2" />
+                    Weiter
+                  </>
+                ) : (
+                  <>
+                    <Pause className="h-5 w-5 mr-2" />
+                    Pause
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
+          </div>
 
           {/* Current Session Info */}
           {status?.isCheckedIn && status.currentEntry && (
@@ -253,11 +321,14 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
                 </span>
               </div>
               <div className="text-lg font-bold text-blue-600">
-                {formatDuration(runningTime)}
+                {formatHMS(runningSeconds)}
               </div>
-              <div className="text-xs text-gray-500">
-                Laufzeit heute
-              </div>
+              <div className="text-xs text-gray-500">Laufzeit (hh:mm:ss)</div>
+              {currentPauseSeconds > 0 && (
+                <div className="text-xs text-orange-600 mt-1">
+                  Pause: {formatHMS(currentPauseSeconds)}
+                </div>
+              )}
             </div>
           )}
 
@@ -270,6 +341,11 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
               <div className="text-xs mt-1">
                 {status?.todaySummary?.entryCount || 0} Einträge
               </div>
+              {typeof status?.todaySummary?.pauseMinutes === 'number' && (
+                <div className="text-xs mt-1 text-orange-700">
+                  Pause heute: {formatDuration(status.todaySummary.pauseMinutes)}
+                </div>
+              )}
               {status?.isCheckedIn && (
                 <div className="text-xs mt-1 text-blue-600">
                   + Laufende Session

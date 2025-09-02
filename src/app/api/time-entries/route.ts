@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidateTag } from "next/cache"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { Category } from "@prisma/client"
+export const runtime = "nodejs"
 
 export async function GET(request: NextRequest) {
   try {
@@ -50,6 +52,11 @@ export async function GET(request: NextRequest) {
         limit,
         total: totalCount,
         totalPages: Math.ceil(totalCount / limit),
+      },
+    }, {
+      headers: {
+        // User-specific listing; prefer fresh data
+        "Cache-Control": "no-store",
       },
     })
   } catch (error) {
@@ -131,42 +138,43 @@ export async function POST(request: NextRequest) {
     const durationMinutes = endDate ? 
       Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60)) : null
 
-    // Create time entry
-    const timeEntry = await db.timeEntry.create({
-      data: {
-        user_id: session.user.id,
-        start_utc: startDate,
-        end_utc: endDate,
-        duration_minutes: durationMinutes,
-        category: category || Category.REGULAR,
-        note,
-        project_tag,
-        created_by: session.user.id,
-      },
+    // Create time entry + audit log atomically
+    const timeEntry = await db.$transaction(async (tx) => {
+      const created = await tx.timeEntry.create({
+        data: {
+          user_id: session.user.id,
+          start_utc: startDate,
+          end_utc: endDate ?? undefined,
+          duration_minutes: durationMinutes ?? undefined,
+          category: category || Category.REGULAR,
+          note,
+          project_tag,
+          created_by: session.user.id,
+        },
+      })
+      await tx.auditLog.create({
+        data: {
+          actor_user_id: session.user.id,
+          entity_type: "TimeEntry",
+          entity_id: created.id,
+          action: "CREATE",
+          after_json: JSON.stringify({
+            user_id: created.user_id,
+            start_utc: created.start_utc,
+            end_utc: created.end_utc,
+            duration_minutes: created.duration_minutes,
+            category: created.category,
+            note: created.note,
+            project_tag: created.project_tag,
+          }),
+        },
+      })
+      return created
     })
 
-    // Log audit trail
-    await db.auditLog.create({
-      data: {
-        actor_user_id: session.user.id,
-        entity_type: "TimeEntry",
-        entity_id: timeEntry.id,
-        action: "CREATE",
-        after_json: JSON.stringify({
-          user_id: timeEntry.user_id,
-          start_utc: timeEntry.start_utc,
-          end_utc: timeEntry.end_utc,
-          duration_minutes: timeEntry.duration_minutes,
-          category: timeEntry.category,
-          note: timeEntry.note,
-          project_tag: timeEntry.project_tag,
-        }),
-      },
-    })
-
-    // Invalidate reports cache for this user
-    // Note: In a production app, you'd use a cache invalidation service
-    // For now, we'll rely on the 5-minute cache expiration
+    // Invalidate cached lists/status that depend on time entries
+    revalidateTag("time-entries")
+    revalidateTag("time-entries-status")
 
     return NextResponse.json(timeEntry)
   } catch (error) {

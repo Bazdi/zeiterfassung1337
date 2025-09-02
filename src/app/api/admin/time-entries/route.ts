@@ -49,7 +49,12 @@ export async function GET(request: NextRequest) {
       take: 100, // Limit results
     })
 
-    return NextResponse.json(timeEntries)
+    return NextResponse.json(timeEntries, {
+      headers: {
+        // Admin views are user-specific; prevent shared caches
+        "Cache-Control": "private, max-age=60",
+      },
+    })
   } catch (error) {
     console.error("Get admin time entries error:", error)
     return NextResponse.json(

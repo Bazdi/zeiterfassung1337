@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+export const runtime = "nodejs"
 
 export async function PATCH(
   request: NextRequest,
@@ -29,36 +30,31 @@ export async function PATCH(
       return NextResponse.json({ error: "Benutzer nicht gefunden" }, { status: 404 })
     }
 
-    // Toggle active status
-    const updatedUser = await db.user.update({
-      where: { id: params.id },
-      data: {
-        active: !existingUser.active,
-      },
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        active: true,
-        created_at: true,
-        last_login_at: true,
-      },
-    })
-
-    // Log audit trail
-    await db.auditLog.create({
-      data: {
-        actor_user_id: session.user.id,
-        entity_type: "User",
-        entity_id: updatedUser.id,
-        action: "UPDATE",
-        before_json: JSON.stringify({
-          active: existingUser.active,
-        }),
-        after_json: JSON.stringify({
-          active: updatedUser.active,
-        }),
-      },
+    // Toggle + audit trail atomically
+    const updatedUser = await db.$transaction(async (tx) => {
+      const updated = await tx.user.update({
+        where: { id: params.id },
+        data: { active: !existingUser.active },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          active: true,
+          created_at: true,
+          last_login_at: true,
+        },
+      })
+      await tx.auditLog.create({
+        data: {
+          actor_user_id: session.user.id,
+          entity_type: "User",
+          entity_id: updated.id,
+          action: "UPDATE",
+          before_json: JSON.stringify({ active: existingUser.active }),
+          after_json: JSON.stringify({ active: updated.active }),
+        },
+      })
+      return updated
     })
 
     return NextResponse.json(updatedUser)

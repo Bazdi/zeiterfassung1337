@@ -183,6 +183,10 @@ export async function GET(request: NextRequest) {
         grossEarnings: totalGrossEarnings,
         netEarnings: totalNetEarnings,
       },
+    }, {
+      headers: {
+        "Cache-Control": "private, max-age=120",
+      },
     })
   } catch (error) {
     console.error("Salary calculation error:", error)

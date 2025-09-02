@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidateTag } from "next/cache"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import { Category } from "@prisma/client"
+export const runtime = "nodejs"
 
 export async function PATCH(
   request: NextRequest,
@@ -91,45 +93,50 @@ export async function PATCH(
     const durationMinutes = endDate ?
       Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60)) : null
 
-    // Update time entry
-    const updatedEntry = await db.timeEntry.update({
-      where: { id: params.id },
-      data: {
-        start_utc: startDate,
-        end_utc: endDate,
-        duration_minutes: durationMinutes,
-        category: category || existingEntry.category,
-        note,
-        project_tag,
-        updated_by: session.user.id,
-      },
+    // Update entry + audit trail atomically
+    const updatedEntry = await db.$transaction(async (tx) => {
+      const updated = await tx.timeEntry.update({
+        where: { id: params.id },
+        data: {
+          start_utc: startDate,
+          end_utc: endDate ?? undefined,
+          duration_minutes: durationMinutes ?? undefined,
+          category: (category as Category) || existingEntry.category,
+          note,
+          project_tag,
+          updated_by: session.user.id,
+        },
+      })
+      await tx.auditLog.create({
+        data: {
+          actor_user_id: session.user.id,
+          entity_type: "TimeEntry",
+          entity_id: updated.id,
+          action: "UPDATE",
+          before_json: JSON.stringify({
+            start_utc: existingEntry.start_utc,
+            end_utc: existingEntry.end_utc,
+            duration_minutes: existingEntry.duration_minutes,
+            category: existingEntry.category,
+            note: existingEntry.note,
+            project_tag: existingEntry.project_tag,
+          }),
+          after_json: JSON.stringify({
+            start_utc: updated.start_utc,
+            end_utc: updated.end_utc,
+            duration_minutes: updated.duration_minutes,
+            category: updated.category,
+            note: updated.note,
+            project_tag: updated.project_tag,
+          }),
+        },
+      })
+      return updated
     })
 
-    // Log audit trail
-    await db.auditLog.create({
-      data: {
-        actor_user_id: session.user.id,
-        entity_type: "TimeEntry",
-        entity_id: updatedEntry.id,
-        action: "UPDATE",
-        before_json: JSON.stringify({
-          start_utc: existingEntry.start_utc,
-          end_utc: existingEntry.end_utc,
-          duration_minutes: existingEntry.duration_minutes,
-          category: existingEntry.category,
-          note: existingEntry.note,
-          project_tag: existingEntry.project_tag,
-        }),
-        after_json: JSON.stringify({
-          start_utc: updatedEntry.start_utc,
-          end_utc: updatedEntry.end_utc,
-          duration_minutes: updatedEntry.duration_minutes,
-          category: updatedEntry.category,
-          note: updatedEntry.note,
-          project_tag: updatedEntry.project_tag,
-        }),
-      },
-    })
+    // Invalidate caches
+    revalidateTag("time-entries")
+    revalidateTag("time-entries-status")
 
     return NextResponse.json(updatedEntry)
   } catch (error) {
@@ -166,30 +173,32 @@ export async function DELETE(
       return NextResponse.json({ error: "Nicht berechtigt" }, { status: 403 })
     }
 
-    // Log audit trail before deletion
-    await db.auditLog.create({
-      data: {
-        actor_user_id: session.user.id,
-        entity_type: "TimeEntry",
-        entity_id: existingEntry.id,
-        action: "DELETE",
-        before_json: JSON.stringify({
-          user_id: existingEntry.user_id,
-          start_utc: existingEntry.start_utc,
-          end_utc: existingEntry.end_utc,
-          duration_minutes: existingEntry.duration_minutes,
-          category: existingEntry.category,
-          note: existingEntry.note,
-          project_tag: existingEntry.project_tag,
-        }),
-        after_json: null,
-      },
+    // Delete entry + audit trail atomically
+    await db.$transaction(async (tx) => {
+      await tx.auditLog.create({
+        data: {
+          actor_user_id: session.user.id,
+          entity_type: "TimeEntry",
+          entity_id: existingEntry.id,
+          action: "DELETE",
+          before_json: JSON.stringify({
+            user_id: existingEntry.user_id,
+            start_utc: existingEntry.start_utc,
+            end_utc: existingEntry.end_utc,
+            duration_minutes: existingEntry.duration_minutes,
+            category: existingEntry.category,
+            note: existingEntry.note,
+            project_tag: existingEntry.project_tag,
+          }),
+          after_json: null,
+        },
+      })
+      await tx.timeEntry.delete({ where: { id: params.id } })
     })
 
-    // Delete time entry
-    await db.timeEntry.delete({
-      where: { id: params.id },
-    })
+    // Invalidate caches
+    revalidateTag("time-entries")
+    revalidateTag("time-entries-status")
 
     return NextResponse.json({ success: true })
   } catch (error) {

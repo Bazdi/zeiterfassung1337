@@ -37,6 +37,8 @@ model TimeEntry {
   start_utc       DateTime
   end_utc         DateTime?
   duration_minutes Int?
+  pause_total_minutes Int      @default(0)
+  pause_started_utc  DateTime?
   category        Category    @default(REGULAR)
   note            String?
   project_tag     String?
@@ -51,6 +53,9 @@ model TimeEntry {
   updater         User?       @relation("UpdatedEntries", fields: [updated_by], references: [id])
 
   @@map("time_entries")
+  @@index([user_id])
+  @@index([start_utc])
+  @@index([user_id, start_utc])
 }
 
 model Rate {

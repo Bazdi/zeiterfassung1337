@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidateTag } from "next/cache"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+export const runtime = "nodejs"
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,29 +28,34 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create new time entry
-    const timeEntry = await db.timeEntry.create({
-      data: {
-        user_id: session.user.id,
-        start_utc: new Date(),
-        created_by: session.user.id,
-      },
+    // Create new time entry + audit trail atomically
+    const timeEntry = await db.$transaction(async (tx) => {
+      const created = await tx.timeEntry.create({
+        data: {
+          user_id: session.user.id,
+          start_utc: new Date(),
+          created_by: session.user.id,
+        },
+      })
+      await tx.auditLog.create({
+        data: {
+          actor_user_id: session.user.id,
+          entity_type: "TimeEntry",
+          entity_id: created.id,
+          action: "CREATE",
+          after_json: JSON.stringify({
+            user_id: created.user_id,
+            start_utc: created.start_utc,
+            category: created.category,
+          }),
+        },
+      })
+      return created
     })
 
-    // Log audit trail
-    await db.auditLog.create({
-      data: {
-        actor_user_id: session.user.id,
-        entity_type: "TimeEntry",
-        entity_id: timeEntry.id,
-        action: "CREATE",
-        after_json: JSON.stringify({
-          user_id: timeEntry.user_id,
-          start_utc: timeEntry.start_utc,
-          category: timeEntry.category,
-        }),
-      },
-    })
+    // Invalidate caches
+    revalidateTag("time-entries")
+    revalidateTag("time-entries-status")
 
     return NextResponse.json({
       id: timeEntry.id,

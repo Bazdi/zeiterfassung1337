@@ -37,18 +37,21 @@ export async function GET(request: NextRequest) {
       select: {
         start_utc: true,
         duration_minutes: true,
+        pause_total_minutes: true,
       },
     })
 
     // Calculate week summary
     const weekDays = new Set()
     let totalMinutesWeek = 0
+    let pauseMinutesWeek = 0
 
     weekEntries.forEach(entry => {
       const day = entry.start_utc.toISOString().split('T')[0]
       weekDays.add(day)
-      if (entry.duration_minutes) {
-        totalMinutesWeek += entry.duration_minutes
+      if (entry.duration_minutes) totalMinutesWeek += entry.duration_minutes
+      if (typeof (entry as any).pause_total_minutes === 'number') {
+        pauseMinutesWeek += (entry as any).pause_total_minutes
       }
     })
 
@@ -73,18 +76,21 @@ export async function GET(request: NextRequest) {
       select: {
         start_utc: true,
         duration_minutes: true,
+        pause_total_minutes: true,
       },
     })
 
     // Calculate month summary
     const monthDays = new Set()
     let totalMinutesMonth = 0
+    let pauseMinutesMonth = 0
 
     monthEntries.forEach(entry => {
       const day = entry.start_utc.toISOString().split('T')[0]
       monthDays.add(day)
-      if (entry.duration_minutes) {
-        totalMinutesMonth += entry.duration_minutes
+      if (entry.duration_minutes) totalMinutesMonth += entry.duration_minutes
+      if (typeof (entry as any).pause_total_minutes === 'number') {
+        pauseMinutesMonth += (entry as any).pause_total_minutes
       }
     })
 
@@ -96,11 +102,18 @@ export async function GET(request: NextRequest) {
         totalMinutes: totalMinutesWeek,
         workDayCount,
         avgMinutesPerDay,
+        pauseMinutes: pauseMinutesWeek,
       },
       month: {
         totalMinutes: totalMinutesMonth,
         workDayCount: monthWorkDayCount,
         avgMinutesPerDay: monthAvgMinutesPerDay,
+        pauseMinutes: pauseMinutesMonth,
+      },
+    }, {
+      // Cache on the client for a short time; data is user-specific
+      headers: {
+        "Cache-Control": "private, max-age=60",
       },
     })
   } catch (error) {

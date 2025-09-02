@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 import bcrypt from "bcryptjs"
+export const runtime = "nodejs"
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,7 +27,12 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(users)
+    return NextResponse.json(users, {
+      headers: {
+        // Admin-only data: avoid shared caching
+        "Cache-Control": "private, max-age=60",
+      },
+    })
   } catch (error) {
     console.error("Get users error:", error)
     return NextResponse.json(
@@ -70,37 +76,38 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12)
 
-    // Create user
-    const user = await db.user.create({
-      data: {
-        username,
-        password_hash: hashedPassword,
-        role: role || "USER",
-        active: true,
-      },
-      select: {
-        id: true,
-        username: true,
-        role: true,
-        active: true,
-        created_at: true,
-        last_login_at: true,
-      },
-    })
-
-    // Log audit trail
-    await db.auditLog.create({
-      data: {
-        actor_user_id: session.user.id,
-        entity_type: "User",
-        entity_id: user.id,
-        action: "CREATE",
-        after_json: JSON.stringify({
-          username: user.username,
-          role: user.role,
-          active: user.active,
-        }),
-      },
+    // Create user + audit trail atomically
+    const user = await db.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          username,
+          password_hash: hashedPassword,
+          role: role || "USER",
+          active: true,
+        },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          active: true,
+          created_at: true,
+          last_login_at: true,
+        },
+      })
+      await tx.auditLog.create({
+        data: {
+          actor_user_id: session.user.id,
+          entity_type: "User",
+          entity_id: created.id,
+          action: "CREATE",
+          after_json: JSON.stringify({
+            username: created.username,
+            role: created.role,
+            active: created.active,
+          }),
+        },
+      })
+      return created
     })
 
     return NextResponse.json(user)

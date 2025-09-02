@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+export const runtime = "nodejs"
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,6 +18,12 @@ export async function GET(request: NextRequest) {
         user_id: session.user.id,
         end_utc: null,
       },
+      select: {
+        id: true,
+        start_utc: true,
+        pause_total_minutes: true,
+        pause_started_utc: true,
+      },
     })
 
     // Get today's entries for summary
@@ -25,35 +32,41 @@ export async function GET(request: NextRequest) {
     const tomorrow = new Date(today)
     tomorrow.setDate(tomorrow.getDate() + 1)
 
-    const todayEntries = await db.timeEntry.findMany({
-      where: {
-        user_id: session.user.id,
-        start_utc: {
-          gte: today,
-          lt: tomorrow,
-        },
-      },
-      orderBy: {
-        start_utc: "asc",
-      },
-    })
-
-    const totalMinutesToday = todayEntries.reduce((sum, entry) => {
-      if (entry.duration_minutes) {
-        return sum + entry.duration_minutes
-      }
-      return sum
-    }, 0)
+    const whereToday = {
+      user_id: session.user.id,
+      start_utc: { gte: today, lt: tomorrow },
+    } as const
+    const [todayCount, todaySum, todayPauseSum] = await Promise.all([
+      db.timeEntry.count({ where: whereToday }),
+      db.timeEntry.aggregate({ where: whereToday, _sum: { duration_minutes: true } }),
+      db.timeEntry.aggregate({ where: whereToday, _sum: { pause_total_minutes: true } }),
+    ])
+    const totalMinutesToday = todaySum._sum.duration_minutes ?? 0
+    let pauseMinutesToday = todayPauseSum._sum.pause_total_minutes ?? 0
+    // Include running pause time if a pause is active on the open entry today
+    if (openEntry?.pause_started_utc) {
+      const now = new Date()
+      const extra = Math.floor(Math.max(0, now.getTime() - new Date(openEntry.pause_started_utc).getTime()) / 60_000)
+      pauseMinutesToday += extra
+    }
 
     return NextResponse.json({
       isCheckedIn: !!openEntry,
       currentEntry: openEntry ? {
         id: openEntry.id,
         start_utc: openEntry.start_utc,
+        pause_total_minutes: openEntry.pause_total_minutes,
+        pause_started_utc: openEntry.pause_started_utc,
       } : null,
       todaySummary: {
         totalMinutes: totalMinutesToday,
-        entryCount: todayEntries.length,
+        entryCount: todayCount,
+        pauseMinutes: pauseMinutesToday,
+      },
+    }, {
+      headers: {
+        // User-specific and highly dynamic; prevent stale cache
+        "Cache-Control": "no-store",
       },
     })
   } catch (error) {
