@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const config: NextConfig = {
   images: {
@@ -15,6 +16,15 @@ const config: NextConfig = {
   experimental: {
     // Help tree-shake icon/date utilities used in the app
     optimizePackageImports: ["lucide-react", "date-fns"],
+  },
+  // Add a safe alias so accidental "/lib/..." imports resolve to src/lib
+  webpack: (cfg) => {
+    cfg.resolve = cfg.resolve || {};
+    cfg.resolve.alias = {
+      ...(cfg.resolve.alias || {}),
+      "/lib": path.resolve(__dirname, "src/lib"),
+    } as typeof cfg.resolve.alias;
+    return cfg;
   },
 };
 
