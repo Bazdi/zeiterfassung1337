@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "nodemon --exec \"npx tsx server.ts\" --watch server.ts --watch src --ext ts,tsx,js,jsx",
     "build": "next build",
-    "start": "next start -p 3000",
+    "start": "sh -c 'next start -p ${PORT:-3000}'",
     "lint": "next lint",
     "test": "vitest",
     "test:run": "vitest run",
@@ -15,7 +15,8 @@
     "db:migrate": "prisma migrate dev",
     "db:reset": "prisma migrate reset",
     "db:seed": "tsx prisma/seed.ts",
-    "db:setup": "prisma db push && prisma generate && tsx prisma/seed.ts"
+    "db:setup": "prisma db push && prisma generate && tsx prisma/seed.ts",
+    "fix:imports": "tsx scripts/fix-imports.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
