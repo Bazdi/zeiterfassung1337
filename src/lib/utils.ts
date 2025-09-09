@@ -27,7 +27,9 @@ export function formatDateTime(date: Date): string {
     month: '2-digit',
     day: '2-digit',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: false,
+    hourCycle: 'h23'
   })
 }
 
@@ -42,6 +44,8 @@ export function formatDate(date: Date): string {
 export function formatTime(date: Date): string {
   return date.toLocaleTimeString('de-DE', {
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: false,
+    hourCycle: 'h23'
   })
 }

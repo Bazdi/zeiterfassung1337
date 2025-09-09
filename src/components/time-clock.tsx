@@ -65,7 +65,9 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
     return date.toLocaleTimeString('de-DE', { 
       hour: '2-digit', 
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
+      hour12: false,
+      hourCycle: 'h23'
     })
   }
 
@@ -247,7 +249,7 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
               >
                 {effectiveCheckedIn ? "Eingestempelt" : "Ausgestempelt"}
               </Badge>
-              {effectiveCheckedIn && status.currentEntry?.pause_started_utc && (
+              {effectiveCheckedIn && status?.currentEntry?.pause_started_utc && (
                 <Badge variant="outline" className="text-xs px-2 py-0.5 border-orange-300 text-orange-700 bg-orange-50">
                   Pause
                 </Badge>
@@ -256,7 +258,7 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-3 w-full justify-center">
+          <div className="flex items-center gap-3 w-full justify-center pb-[env(safe-area-inset-bottom)]">
             <Button
               size="lg"
               className={`
@@ -309,14 +311,16 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
           </div>
 
           {/* Current Session Info */}
-          {status?.isCheckedIn && status.currentEntry && (
+          {status?.isCheckedIn && status?.currentEntry && (
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center space-x-1 text-sm text-gray-600">
                 <Clock className="h-4 w-4" />
                 <span>
-                  Seit {new Date(status.currentEntry.start_utc).toLocaleTimeString('de-DE', {
+                  Seit {new Date(status.currentEntry!.start_utc).toLocaleTimeString('de-DE', {
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
+                    hour12: false,
+                    hourCycle: 'h23'
                   })}
                 </span>
               </div>

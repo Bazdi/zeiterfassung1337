@@ -159,7 +159,7 @@ async function main() {
       start_utc: new Date(yesterday.getTime() + 8 * 60 * 60 * 1000), // 8:00
       end_utc: new Date(yesterday.getTime() + 16 * 60 * 60 * 1000), // 16:00
       duration_minutes: 480,
-      category: 'REGULAR',
+      category: Category.REGULAR,
       note: 'Voller Arbeitstag',
       project_tag: 'Projekt B',
       created_by: user1.id,
@@ -170,7 +170,7 @@ async function main() {
       start_utc: new Date(lastWeek.getTime() + 9 * 60 * 60 * 1000), // 9:00
       end_utc: new Date(lastWeek.getTime() + 15 * 60 * 60 * 1000), // 15:00
       duration_minutes: 360,
-      category: 'REGULAR',
+      category: Category.REGULAR,
       note: 'Wochenarbeiten',
       project_tag: 'Projekt C',
       created_by: user1.id,

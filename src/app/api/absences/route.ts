@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { revalidateTag } from "next/cache"
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,7 +21,9 @@ export async function GET(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(absences)
+    return NextResponse.json(absences, {
+      headers: { "Cache-Control": "private, max-age=60" },
+    })
   } catch (error) {
     console.error("Get absences error:", error)
     return NextResponse.json(
@@ -91,6 +94,8 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Revalidate salary views that include absences
+    revalidateTag("absences")
     return NextResponse.json(absence)
   } catch (error) {
     console.error("Create absence error:", error)

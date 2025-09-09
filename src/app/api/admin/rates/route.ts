@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { revalidateTag } from "next/cache"
 export const runtime = "nodejs"
 
 export async function GET(request: NextRequest) {
@@ -79,6 +80,8 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Invalidate caches that depend on rates (e.g., reports/salary tags)
+    revalidateTag("rates")
     return NextResponse.json(rate)
   } catch (error) {
     console.error("Create rate error:", error)

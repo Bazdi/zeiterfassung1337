@@ -41,9 +41,7 @@ export async function GET(request: NextRequest) {
           gte: monthStart,
           lte: monthEnd,
         },
-        duration_minutes: {
-          not: null,
-        },
+        // include running ones too; we'll handle nulls
       },
       orderBy: {
         start_utc: "asc",
@@ -62,15 +60,17 @@ export async function GET(request: NextRequest) {
     })
 
     // Calculate regular work hours and earnings
-    let totalRegularHours = 0
+    let totalRegularSec = 0
     let totalRegularEarnings = 0
-    let totalSurchargeHours = 0
+    let totalSurchargeSec = 0
     let totalSurchargeEarnings = 0
 
     for (const entry of timeEntries) {
-      if (!entry.duration_minutes) continue
+      const endUtc = (entry as any).end_utc as Date | null
+      const sec = endUtc ? Math.max(0, Math.round((endUtc.getTime() - new Date(entry.start_utc).getTime()) / 1000)) : ((entry.duration_minutes || 0) * 60)
+      if (sec <= 0) continue
 
-      const hours = entry.duration_minutes / 60
+      const hours = sec / 3600
       const startTime = new Date(entry.start_utc)
       const dayOfWeek = startTime.getDay() // 0 = Sunday, 1 = Monday, etc.
 
@@ -128,10 +128,10 @@ export async function GET(request: NextRequest) {
       const earnings = hours * applicableRate
 
       if (isSurcharge) {
-        totalSurchargeHours += hours
+        totalSurchargeSec += sec
         totalSurchargeEarnings += earnings
       } else {
-        totalRegularHours += hours
+        totalRegularSec += sec
         totalRegularEarnings += earnings
       }
     }
@@ -151,7 +151,11 @@ export async function GET(request: NextRequest) {
     const monthlyBonusEarnings = monthlyBonus?.fixed_amount || 0
 
     // Calculate totals
-    const totalHours = totalRegularHours + totalSurchargeHours + totalAbsenceHours + monthlyBonusHours
+    // Convert seconds to minute-resolution hours for display; keep earnings precise
+    const toMinuteHours = (sec: number) => Math.floor(sec / 60) / 60
+    const regularHours = toMinuteHours(totalRegularSec)
+    const surchargeHours = toMinuteHours(totalSurchargeSec)
+    const totalHours = regularHours + surchargeHours + totalAbsenceHours + monthlyBonusHours
     const totalGrossEarnings = totalRegularEarnings + totalSurchargeEarnings + totalAbsenceEarnings + monthlyBonusEarnings
 
     // For now, assume 30% taxes for net calculation (this should be configurable)
@@ -163,11 +167,11 @@ export async function GET(request: NextRequest) {
       year: year,
       baseHourlyRate: baseHourlyRate,
       regularWork: {
-        hours: totalRegularHours,
+        hours: regularHours,
         earnings: totalRegularEarnings,
       },
       surchargeWork: {
-        hours: totalSurchargeHours,
+        hours: surchargeHours,
         earnings: totalSurchargeEarnings,
       },
       absences: {

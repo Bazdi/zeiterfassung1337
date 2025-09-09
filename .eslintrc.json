@@ -1,0 +1,21 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          {
+            "name": "lodash",
+            "message": "Avoid `import _ from 'lodash'`. Import specific utilities (e.g., `import debounce from 'lodash/debounce'`) or use native APIs/date-fns."
+          },
+          {
+            "name": "moment",
+            "message": "Use `date-fns` or native Intl APIs instead of moment."
+          }
+        ]
+      }
+    ]
+  }
+}
+

@@ -120,7 +120,8 @@ export async function POST(request: NextRequest) {
 
     doc.end()
     const buffer = await done
-    return new NextResponse(buffer, { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="monatsabrechnung_${y}-${String(m).padStart(2,'0')}.pdf"` } })
+    const bytes = new Uint8Array(buffer)
+    return new NextResponse(bytes as any, { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="monatsabrechnung_${y}-${String(m).padStart(2,'0')}.pdf"` } })
   } catch (e) {
     console.error('Timesheet PDF error:', e)
     return NextResponse.json({ error: 'Interner Serverfehler' }, { status: 500 })

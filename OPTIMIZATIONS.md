@@ -15,16 +15,13 @@ Performance, build, and DX best practices for this codebase (Next.js 15, React 1
 
 ## Build & Bundling
 
-- Bundle analyzer (identify heavy deps):
+- Bundle analyzer (identify heavy deps) for this TS setup:
 
-  ```js
-  // next.config.js
-  const withBundleAnalyzer = require("@next/bundle-analyzer")({
-    enabled: process.env.ANALYZE === "true",
-  });
+  ```ts
+  // next.config.ts
+  import type { NextConfig } from "next";
 
-  /** @type {import('next').NextConfig} */
-  const config = {
+  const config: NextConfig = {
     images: { formats: ["image/avif", "image/webp"] },
     experimental: {
       // Helps tree-shake common UI/icon libs used with shadcn/ui
@@ -32,7 +29,15 @@ Performance, build, and DX best practices for this codebase (Next.js 15, React 1
     },
   };
 
-  module.exports = withBundleAnalyzer(config);
+  // Optional: wrap with bundle analyzer when available
+  let withBundleAnalyzer: (c: NextConfig) => NextConfig = (c) => c;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const ba = require("@next/bundle-analyzer");
+    withBundleAnalyzer = ba({ enabled: process.env.ANALYZE === "true" });
+  } catch {}
+
+  export default withBundleAnalyzer(config);
   ```
 
   - Run analyzer: `ANALYZE=true npm run build` and inspect `/.next/analyze`.
@@ -44,16 +49,20 @@ Performance, build, and DX best practices for this codebase (Next.js 15, React 1
   const HeavyClientWidget = dynamic(() => import("@/components/heavy-client-widget"), { ssr: false });
   ```
 
-- Modularize imports to reduce bundle size (alternative to `optimizePackageImports`):
+- Modularize imports to reduce bundle size (alternative/complement to `optimizePackageImports`):
 
-  ```js
-  // next.config.js
-  const config = {
+  ```ts
+  // next.config.ts
+  import type { NextConfig } from "next";
+
+  const config: NextConfig = {
     modularizeImports: {
       lodash: { transform: "lodash/{{member}}" },
       "date-fns": { transform: "date-fns/{{member}}" },
     },
   };
+
+  export default config;
   ```
 
 ## React 19 + App Router
@@ -61,18 +70,36 @@ Performance, build, and DX best practices for this codebase (Next.js 15, React 1
 - Prefer streaming RSC: large page sections should render server-side with Suspense boundaries for progressive hydration.
 - Use server actions for mutations when appropriate; they integrate with revalidation tags cleanly.
 - Avoid client context/providers unless necessary; colocate state near consumers to reduce re-renders.
+- Prefer calling server code directly in RSC instead of fetching your own API routes; import from `src/lib/*` and access Prisma directly for lower overhead.
+- Use route segment config to control rendering and caching at the edge of a page:
+
+  ```ts
+  // app/(segment)/page.tsx
+  export const revalidate = 60;           // ISR for this segment
+  export const dynamic = "force-dynamic"; // or "force-static" when safe
+  ```
 
 ## Data Fetching, Caching, and Revalidation
 
 - Fetch with explicit caching semantics:
 
   ```ts
-  // Server component or lib
+  // Server component or lib: fetch with explicit caching
   export async function getTimeEntries() {
     const res = await fetch("/api/time-entries", {
       next: { revalidate: 60, tags: ["time-entries"] },
     });
     return res.json();
+  }
+
+  // Prefer direct DB access from RSC when possible (skip API hop):
+  import { db } from "@/lib/db";
+  export async function getTimeEntriesDirect(userId: number) {
+    return db.timeEntry.findMany({
+      where: { user_id: userId },
+      orderBy: { start_utc: "desc" },
+      take: 50,
+    });
   }
   ```
 
@@ -102,6 +129,9 @@ Performance, build, and DX best practices for this codebase (Next.js 15, React 1
   ```
 
 - Use ISR for pages that can be static with periodic refresh (set `export const revalidate = N` in page/layout files).
+ - For highly dynamic user-specific data, consider `no-store` on responses or `export const dynamic = "force-dynamic"`.
+ - Control prefetch behavior on heavy lists of links to avoid bandwidth spikes: `<Link prefetch={false} />`.
+ - Add `loading.tsx` and `error.tsx` per segment to improve streaming UX and error isolation.
 
 ## Prisma + SQLite
 
@@ -124,6 +154,8 @@ Performance, build, and DX best practices for this codebase (Next.js 15, React 1
 - SQLite tuning (local/dev): consider WAL mode for better concurrent reads/writes.
   - One-time at startup or in seed: `PRAGMA journal_mode=WAL;`
   - Note: keep this optional and environment-specific (dev vs prod).
+- Reuse Prisma client in dev to avoid hot-reload churn (singleton pattern via `globalThis`).
+  - See `src/lib/db.ts` for an example pattern; prefer importing `db` everywhere.
 
 ## Server & Runtime
 
@@ -134,6 +166,7 @@ Performance, build, and DX best practices for this codebase (Next.js 15, React 1
 - Choose runtime per route:
   - Edge: low-latency, simple, IO-bound work (no native Node APIs).
   - Node: Prisma/DB access and complex CPU-bound logic.
+ - Third-party scripts: use `next/script` with `strategy="afterInteractive"` or `lazyOnload`; avoid blocking the main thread.
 
 ## Tailwind v4 + shadcn/ui
 
@@ -141,6 +174,7 @@ Performance, build, and DX best practices for this codebase (Next.js 15, React 1
 - Prefer CSS variables and utility classes over heavy component overrides.
 - Virtualize large lists (e.g., `react-virtuoso`) to keep the DOM light.
 - Respect motion preferences: wrap large animations with `@media (prefers-reduced-motion: reduce)`.
+ - Avoid dynamic string-concatenated class names where possible; keep class lists static to maximize purging and tree-shaking.
 
 ## Images & Fonts
 
@@ -151,12 +185,14 @@ Performance, build, and DX best practices for this codebase (Next.js 15, React 1
 - Fonts:
   - Use `next/font/local` to self-host and subset fonts.
   - Limit font weights/styles to what you actually use.
+  - Consider `display: swap` behavior (default in `next/font`) to reduce FOIT; ensure fallback fonts have similar metrics to reduce CLS.
 
 ## Linting, Types, and CI
 
 - Keep TypeScript strict; surface type issues early for safer refactors.
 - Run `npm run lint` and fix warnings that may hint at performance pitfalls (exhaustive deps, unused vars, etc.).
 - Consider adding lightweight checks in CI: build, lint, and a focused type-check (`tsc -p tsconfig.json --noEmit`).
+ - Enforce import hygiene to keep bundles lean: forbid default `lodash`/`moment` imports via ESLint rules; prefer per-method imports or `date-fns`.
 
 ## Verification & Tooling
 
@@ -164,6 +200,7 @@ Performance, build, and DX best practices for this codebase (Next.js 15, React 1
 - Bundle analysis: `ANALYZE=true npm run build` with `@next/bundle-analyzer`.
 - Lighthouse: run against `npm start` build for real scores; track LCP/CLS/INP and fix regressions.
 - React Profiler (DevTools) to spot wasted renders in client components.
+ - Chrome Performance panel to verify preloading/prefetching behavior and detect long tasks affecting INP.
 
 ## Operational Tips
 
@@ -178,8 +215,9 @@ Performance, build, and DX best practices for this codebase (Next.js 15, React 1
 3. Add `revalidate`/tagged caching for read endpoints; call `revalidateTag()` after writes.
 4. Review Prisma queries for `select/include` usage and add missing indexes based on query patterns.
 5. Optimize hero image and critical font loading.
+ 6. Add `loading.tsx`/`error.tsx` to critical segments for better streaming UX.
+ 7. Replace internal API fetches in RSC with direct lib/DB calls where appropriate.
 
 ---
 
 Use this guide as a living document. As patterns emerge (e.g., frequent filters on specific fields), update Prisma indexes and caching tags accordingly.
-

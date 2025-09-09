@@ -21,6 +21,11 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next()
   }
 
+  // Let all API routes be handled by route handlers themselves (they do auth)
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next()
+  }
+
   // Allow public routes and NextAuth routes
   if (
     publicRoutes.includes(pathname) ||
@@ -42,7 +47,6 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next|favicon|assets).*)",
+    "/((?!_next|favicon|assets|api).*)",
   ],
 }
-

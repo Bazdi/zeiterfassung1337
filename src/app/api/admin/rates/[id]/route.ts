@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { revalidateTag } from "next/cache"
 export const runtime = "nodejs"
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
@@ -56,6 +57,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       },
     })
 
+    revalidateTag("rates")
     return NextResponse.json(rate)
   } catch (error) {
     console.error("Update rate error:", error)
@@ -87,6 +89,7 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     }
 
     await db.rate.delete({ where: { id: params.id } })
+    revalidateTag("rates")
 
     return NextResponse.json({ success: true })
   } catch (error) {

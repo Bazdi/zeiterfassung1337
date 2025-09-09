@@ -64,6 +64,9 @@ export default function LoginPage() {
               <Input
                 id="username"
                 type="text"
+                autoComplete="username"
+                autoCapitalize="none"
+                autoCorrect="off"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -76,6 +79,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required

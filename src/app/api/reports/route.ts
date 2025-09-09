@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
       },
       select: {
         start_utc: true,
+        end_utc: true,
         duration_minutes: true,
         pause_total_minutes: true,
       },
@@ -43,19 +44,25 @@ export async function GET(request: NextRequest) {
 
     // Calculate week summary
     const weekDays = new Set()
-    let totalMinutesWeek = 0
+    let totalSecondsWeek = 0
     let pauseMinutesWeek = 0
 
     weekEntries.forEach(entry => {
       const day = entry.start_utc.toISOString().split('T')[0]
       weekDays.add(day)
-      if (entry.duration_minutes) totalMinutesWeek += entry.duration_minutes
+      if (entry.end_utc) {
+        const sec = Math.max(0, Math.round((entry.end_utc.getTime() - entry.start_utc.getTime()) / 1000))
+        totalSecondsWeek += sec
+      } else if (entry.duration_minutes) {
+        totalSecondsWeek += entry.duration_minutes * 60
+      }
       if (typeof (entry as any).pause_total_minutes === 'number') {
         pauseMinutesWeek += (entry as any).pause_total_minutes
       }
     })
 
     const workDayCount = weekDays.size
+    const totalMinutesWeek = Math.floor(totalSecondsWeek / 60)
     const avgMinutesPerDay = workDayCount > 0 ? Math.round(totalMinutesWeek / workDayCount) : 0
 
     // Month summary (current month)
@@ -75,6 +82,7 @@ export async function GET(request: NextRequest) {
       },
       select: {
         start_utc: true,
+        end_utc: true,
         duration_minutes: true,
         pause_total_minutes: true,
       },
@@ -82,19 +90,25 @@ export async function GET(request: NextRequest) {
 
     // Calculate month summary
     const monthDays = new Set()
-    let totalMinutesMonth = 0
+    let totalSecondsMonth = 0
     let pauseMinutesMonth = 0
 
     monthEntries.forEach(entry => {
       const day = entry.start_utc.toISOString().split('T')[0]
       monthDays.add(day)
-      if (entry.duration_minutes) totalMinutesMonth += entry.duration_minutes
+      if (entry.end_utc) {
+        const sec = Math.max(0, Math.round((entry.end_utc.getTime() - entry.start_utc.getTime()) / 1000))
+        totalSecondsMonth += sec
+      } else if (entry.duration_minutes) {
+        totalSecondsMonth += entry.duration_minutes * 60
+      }
       if (typeof (entry as any).pause_total_minutes === 'number') {
         pauseMinutesMonth += (entry as any).pause_total_minutes
       }
     })
 
     const monthWorkDayCount = monthDays.size
+    const totalMinutesMonth = Math.floor(totalSecondsMonth / 60)
     const monthAvgMinutesPerDay = monthWorkDayCount > 0 ? Math.round(totalMinutesMonth / monthWorkDayCount) : 0
 
     return NextResponse.json({

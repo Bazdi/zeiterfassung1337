@@ -122,8 +122,8 @@ export async function POST(request: NextRequest) {
     const logoPath = logoCandidates.find(p => fs.existsSync(p))
     if (logoPath) {
       try {
-        const buf = fs.readFileSync(logoPath)
-        const imageId = wb.addImage({ buffer: buf, extension: 'png' })
+        const base64 = fs.readFileSync(logoPath).toString('base64')
+        const imageId = wb.addImage({ base64, extension: 'png' })
         // Anchor via range to reduce coordinate issues
         ws.addImage(imageId, 'E1:H4')
       } catch {}
@@ -253,9 +253,9 @@ export async function POST(request: NextRequest) {
     // Output
     const filename = `monatsabrechnung_${year}-${String(month).padStart(2, '0')}.xlsx`
     const arrayBuffer = await wb.xlsx.writeBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const bytes = new Uint8Array(arrayBuffer as ArrayBufferLike)
 
-    return new NextResponse(buffer, {
+    return new NextResponse(bytes as any, {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="${filename}"`,

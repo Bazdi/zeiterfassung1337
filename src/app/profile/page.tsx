@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState } from "react"
 import { useSession, signOut } from "next-auth/react"
@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { LogOut, User, Calendar, List, Settings, UserCircle, History, ArrowLeft } from "lucide-react"
+import { LogOut, User, List, Settings, UserCircle, ArrowLeft } from "lucide-react"
+import AppHeader from "@/components/app-header"
 import { AuthGuard } from "@/components/auth-guard"
 import { toast } from "sonner"
+import MobileTabbar from "@/components/mobile-tabbar"
 
 export default function Profile() {
   const { data: session } = useSession()
@@ -72,54 +74,10 @@ export default function Profile() {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center space-x-4">
-                <Link href="/" prefetch={false}>
-                  <Button variant="outline" size="sm">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Zurück
-                  </Button>
-                </Link>
-                <h1 className="text-xl font-semibold text-gray-900">Profil</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Link href="/time-entries" prefetch={false}>
-                  <Button variant="outline" size="sm">
-                    <List className="h-4 w-4 mr-2" />
-                    Einträge
-                  </Button>
-                </Link>
-                {session.user.role === "ADMIN" && (
-                  <Link href="/admin" prefetch={false}>
-                    <Button variant="outline" size="sm">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Admin
-                    </Button>
-                  </Link>
-                )}
-                <div className="flex items-center space-x-2">
-                  <User className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm text-gray-700">{session.user.username}</span>
-                  <span className="text-sm text-gray-500">({session.user.role})</span>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => signOut()}
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Abmelden
-                </Button>
-              </div>
-            </div>
-          </div>
-        </header>
+        <AppHeader title="Profil" />
 
         {/* Main Content */}
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-[env(safe-area-inset-bottom)]">
           <div className="max-w-md mx-auto">
             <Card>
               <CardHeader>
@@ -129,7 +87,28 @@ export default function Profile() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {/* User Info */}
+                {/* App Installation */}
+                <div className="space-y-2">
+                  <h3 className="text-lg font-medium">App installieren</h3>
+                  <p className="text-sm text-gray-600">Füge die App deinem Startbildschirm hinzu, um schneller darauf zuzugreifen.</p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={async () => {
+                        const d = (typeof window !== 'undefined' && (window as any).deferredA2HS) || null
+                        if (d && typeof (d as any).prompt === 'function') {
+                          ;(d as any).prompt();
+                          const { outcome } = await (d as any).userChoice
+                          if (outcome) (window as any).deferredA2HS = null
+                        } else {
+                          alert('Hinweis: Je nach Browser kannst du die App über das Menü "Zum Startbildschirm hinzufügen" installieren.')
+                        }
+                      }}
+                    >
+                      App installieren
+                    </Button>
+                  </div>
+                </div>
                 <div className="space-y-4">
                   <div>
                     <Label>Benutzername</Label>
@@ -183,6 +162,7 @@ export default function Profile() {
             </Card>
           </div>
         </main>
+        <MobileTabbar />
       </div>
     </AuthGuard>
   )

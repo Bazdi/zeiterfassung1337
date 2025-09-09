@@ -42,6 +42,29 @@ npm run dev
 
 4. Öffnen Sie [http://localhost:3000](http://localhost:3000) im Browser.
 
+## PWA & Mobile
+
+- Installierbar (Add to Home Screen) mit Offline-Unterstützung:
+  - Manifest: `public/manifest.webmanifest`
+  - Service Worker: `public/sw.js` (Cache-first für statische Assets)
+  - Registrierung: `src/components/sw-register.tsx` (in `layout.tsx` eingebunden)
+  - A2HS-Banner: `src/components/a2hs-prompt.tsx` (mobil, optional)
+- Icons: SVG-Quelle unter `public/icons/icon.svg`. PNGs (`icon-192.png`, `icon-512.png`) werden vor dem Build automatisch erzeugt.
+  - Manuell generieren: `npm run assets:icons`
+- Safe-Area: iOS Notch/Home-Bar wird berücksichtigt (Safe-Area-Insets in `globals.css`).
+
+## Nützliche Umgebungsvariablen
+
+- `NEXT_PUBLIC_DEBUG_SHOW_SECONDS` (optional):
+  - `true` zeigt Sekunden in der UI an (hh:mm:ss) – nur für Debugging.
+  - Standard: nicht gesetzt/false. Summen/Export bleiben immer minutenbasiert.
+
+## Bedienhinweise (mobil)
+
+- Header-Aktionen haben vergrößerte Tap-Ziele auf Mobilgeräten.
+- Zeiteintragsliste ist virtualisiert (flüssige Scroll-Performance bei vielen Einträgen).
+- Erstellen/Bearbeiten verwenden mobilfreundliche Bottom-Sheet-Dialoge.
+
 ## Standard-Benutzer
 
 - **Admin**: Benutzername \`admin\`, Passwort \`admin123\`
@@ -87,6 +110,18 @@ src/
 - \`GET /api/time-entries/status\` - Aktueller Status
 - \`GET /api/time-entries\` - Zeiteinträge abrufen
 - \`POST /api/time-entries\` - Zeiteintrag erstellen
+
+## Exporte
+
+- XLSX (Monatsabrechnung):
+  - Route: `POST /api/exports/timesheet` (optional: `{ year, month }`)
+  - Inhalte: Tag, Datum, Start, Ende, Pause, Prozente, Stunden (hh:mm), Arbeitszeit (hh:mm), Gehalt (€, formatiert), gerundete Stunden/Gehaltswerte.
+  - Darstellung: Minutenbasiert (hh:mm). Sekunden werden intern berücksichtigt (für Summen/Abrechnung), aber nicht angezeigt.
+- PDF (Monatsabrechnung):
+  - Route: `POST /api/exports/timesheet/pdf` (optional: `{ year, month }`)
+  - Inhalte: wie XLSX, Minutenbasiert in der Darstellung.
+
+Hinweis: Die Anwendung akkumuliert Zeiten intern sekundengenau (für Genauigkeit bei Summen), zeigt aber in UI/Export bewusst Minuten an.
 
 ### Admin
 - \`GET /api/admin/users\` - Benutzerliste

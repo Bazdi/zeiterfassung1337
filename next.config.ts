@@ -5,6 +5,10 @@ const config: NextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
   },
+  modularizeImports: {
+    lodash: { transform: "lodash/{{member}}" },
+    "date-fns": { transform: "date-fns/{{member}}" },
+  },
   eslint: {
     // Avoid interactive lint prompt during CI/builds
     ignoreDuringBuilds: true,

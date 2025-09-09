@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { start_utc, end_utc, category, note, project_tag } = body
+    const { start_utc, end_utc, category, note, project_tag, pause_total_minutes } = body
 
     // Validate input
     if (!start_utc) {
@@ -134,9 +134,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate duration if end time is provided
-    const durationMinutes = endDate ? 
-      Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60)) : null
+    // Calculate duration if end time is provided (round to nearest minute, min 1)
+    const durationMinutes = endDate ?
+      Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 60000)) : null
 
     // Create time entry + audit log atomically
     const timeEntry = await db.$transaction(async (tx) => {
@@ -146,9 +146,11 @@ export async function POST(request: NextRequest) {
           start_utc: startDate,
           end_utc: endDate ?? undefined,
           duration_minutes: durationMinutes ?? undefined,
-          category: category || Category.REGULAR,
+          category: (category as Category) || Category.REGULAR,
           note,
           project_tag,
+          // allow manual pause capture on retro entries
+          pause_total_minutes: typeof pause_total_minutes === 'number' && pause_total_minutes >= 0 ? Math.floor(pause_total_minutes) : undefined,
           created_by: session.user.id,
         },
       })

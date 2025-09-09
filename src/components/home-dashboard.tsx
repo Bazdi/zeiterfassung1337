@@ -8,12 +8,14 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { LogOut, User, Calendar, List, Settings, UserCircle, History, Euro, Info } from "lucide-react"
+import AppHeader from "@/components/app-header"
 import { AuthGuard } from "@/components/auth-guard"
 import { useTimeEntries } from "@/hooks/use-time-entries"
 import { useAllReports } from "@/hooks/use-reports"
 import { useSalary } from "@/hooks/use-salary"
 import { useDailyReport } from "@/hooks/use-daily-report"
 import { formatHours } from "@/lib/utils"
+import MobileTabbar from "@/components/mobile-tabbar"
 
 // Load the clock only on the client to keep the RSC shell lean
 const TimeClock = dynamic(() => import("@/components/time-clock").then(m => m.TimeClock), { ssr: false })
@@ -63,50 +65,9 @@ export function HomeDashboard({
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center h-16">
-              <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900">Zeiterfassung</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Link href="/time-entries" prefetch={false}>
-                  <Button variant="outline" size="sm">
-                    <List className="h-4 w-4 mr-2" />
-                    Buchungen
-                  </Button>
-                </Link>
-                <Link href="/profile" prefetch={false}>
-                  <Button variant="outline" size="sm">
-                    <UserCircle className="h-4 w-4 mr-2" />
-                    Profil
-                  </Button>
-                </Link>
-                {session?.user.role === "ADMIN" && (
-                  <Link href="/admin" prefetch={false}>
-                    <Button variant="outline" size="sm">
-                      <Settings className="h-4 w-4 mr-2" />
-                      Admin
-                    </Button>
-                  </Link>
-                )}
-                {session && (
-                  <div className="flex items-center space-x-2">
-                    <User className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm text-gray-700">{session.user.username}</span>
-                    <Badge variant="secondary">{session.user.role}</Badge>
-                  </div>
-                )}
-                <Button variant="outline" size="sm" onClick={() => signOut()}>
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Abmelden
-                </Button>
-              </div>
-            </div>
-          </div>
-        </header>
+        <AppHeader title="Zeiterfassung" />
 
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16 pb-[env(safe-area-inset-bottom)]">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <TimeClock onTimeEntryChange={invalidateReports} />
@@ -270,7 +231,7 @@ export function HomeDashboard({
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">Zuschlagsstunden <Info className="h-4 w-4 text-gray-400" title="Stunden mit Zuschlägen (Nacht, Samstag, Sonntag, Feiertag)" /></span>
+                        <span className="text-base text-gray-700 min-w-0 break-words">Zuschlagsstunden <Info className="h-4 w-4 text-gray-400" /></span>
                         <span className="font-semibold text-lg text-orange-600 shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? formatHours(initialSalary.surchargeWork.hours) : "...") : formatHours(salary?.surchargeWork.hours)}
                         </span>
@@ -435,13 +396,13 @@ export function HomeDashboard({
                     <div className="rounded-md border p-3 bg-white text-center">
                       <div className="text-[10px] text-gray-500">Erster Check-in</div>
                       <div className="text-sm font-semibold">
-                        {dailyLoading ? "..." : daily?.firstCheckIn ? new Date(daily.firstCheckIn).toLocaleTimeString("de-DE", {hour: "2-digit", minute: "2-digit"}) : "-"}
+                        {dailyLoading ? "..." : daily?.firstCheckIn ? new Date(daily.firstCheckIn).toLocaleTimeString("de-DE", {hour: "2-digit", minute: "2-digit", hour12: false, hourCycle: 'h23'}) : "-"}
                       </div>
                     </div>
                     <div className="rounded-md border p-3 bg-white text-center">
                       <div className="text-[10px] text-gray-500">Letzter Check-out</div>
                       <div className="text-sm font-semibold">
-                        {dailyLoading ? "..." : daily?.lastCheckOut ? new Date(daily.lastCheckOut).toLocaleTimeString("de-DE", {hour: "2-digit", minute: "2-digit"}) : "-"}
+                        {dailyLoading ? "..." : daily?.lastCheckOut ? new Date(daily.lastCheckOut).toLocaleTimeString("de-DE", {hour: "2-digit", minute: "2-digit", hour12: false, hourCycle: 'h23'}) : "-"}
                       </div>
                     </div>
                   </div>
@@ -498,6 +459,7 @@ export function HomeDashboard({
             </div>
           </div>
         </main>
+        <MobileTabbar />
       </div>
     </AuthGuard>
   )

@@ -18,7 +18,7 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const { start_utc, end_utc, category, note, project_tag } = body
+    const { start_utc, end_utc, category, note, project_tag, pause_total_minutes } = body
 
     // Find the time entry
     const existingEntry = await db.timeEntry.findUnique({
@@ -89,9 +89,9 @@ export async function PATCH(
       }
     }
 
-    // Calculate duration if end time is provided
+    // Calculate duration if end time is provided (round to nearest minute, min 1)
     const durationMinutes = endDate ?
-      Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60)) : null
+      Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 60000)) : null
 
     // Update entry + audit trail atomically
     const updatedEntry = await db.$transaction(async (tx) => {
@@ -104,6 +104,10 @@ export async function PATCH(
           category: (category as Category) || existingEntry.category,
           note,
           project_tag,
+          // allow manual pause adjustments
+          ...(typeof pause_total_minutes === 'number' && pause_total_minutes >= 0
+            ? { pause_total_minutes: Math.floor(pause_total_minutes) }
+            : {}),
           updated_by: session.user.id,
         },
       })

@@ -18,13 +18,13 @@ export default async function Home() {
   const base = (envBase || headerBase).replace(/\/$/, "")
 
   // Fetch user-scoped data on the server with caching tags
-  let initialReports: unknown | undefined
-  let initialSalary: unknown | undefined
-  let initialStatus: unknown | undefined
+  let initialReports: any | undefined
+  let initialSalary: any | undefined
+  let initialStatus: any | undefined
   try {
     const [reportsRes, salaryRes, statusRes] = await Promise.all([
-      fetch(`${base}/api/reports`, { next: { tags: ["time-entries"] } }),
-      fetch(`${base}/api/salary`, { next: { tags: ["time-entries"] } }),
+      fetch(`${base}/api/reports`, { next: { tags: ["time-entries", "rates"] } }),
+      fetch(`${base}/api/salary`, { next: { tags: ["time-entries", "rates", "absences"] } }),
       fetch(`${base}/api/time-entries/status`, { next: { tags: ["time-entries-status"] } }),
     ])
     initialReports = reportsRes.ok ? await reportsRes.json() : undefined
