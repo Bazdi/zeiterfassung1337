@@ -29,7 +29,7 @@ import { useHolidays } from './hooks/use-holidays';
 
 // Import utilities
 import { getDaysInMonth, getWeekLastDays, getISOWeekNumber } from './utils/date-helpers';
-import { toISOString, formatMinutesToHM, calculateWorkingHoursForDay } from './utils/time-helpers';
+import { toISOString, formatMinutesToHM, calculateWorkingHoursForDay, parseHMToMinutes } from './utils/time-helpers';
 import { validateTimeEntryData } from './utils/validation';
 
 // Import types
@@ -150,6 +150,35 @@ export default function BookingsMonthView({
     });
   };
 
+  const handleSaveDuration = async (day: string, durationStr: string) => {
+    const dayEntries = byDay.get(day) || [];
+    const durationMinutes = parseHMToMinutes(durationStr);
+
+    if (dayEntries.length > 0) {
+      // Update existing entry: set end = start + duration
+      const lastEntry = dayEntries[dayEntries.length - 1];
+      const startTime = new Date(lastEntry.start_utc);
+      const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
+      const endIso = endTime.toISOString();
+
+      await updateEntry(lastEntry.id, { end_utc: endIso });
+    } else {
+      // Create new entry
+      const startIso = toISOString(day, "08:00");
+      const endTime = new Date(startIso);
+      endTime.setMinutes(endTime.getMinutes() + durationMinutes);
+      const endIso = endTime.toISOString();
+
+      await createEntry({
+        start_utc: startIso,
+        end_utc: endIso,
+        pause_total_minutes: 0,
+        note: "",
+        category: "REGULAR"
+      });
+    }
+  };
+
   const handleCreateEntry = async (day: string, buffer: CreateEntryBuffer) => {
     const validation = validateTimeEntryData({
       start: buffer.start,
@@ -194,6 +223,10 @@ export default function BookingsMonthView({
       note: "",
       category: "REGULAR"
     });
+  };
+
+  const onUpdateCreateBuffer = (updates: Partial<CreateEntryBuffer>) => {
+    setCreateBuffer(prev => ({ ...prev, ...updates }));
   };
 
   // Calculate month totals
@@ -244,24 +277,26 @@ export default function BookingsMonthView({
                     return (
                       <React.Fragment key={day}>
                         <DayRow
-                          date={day}
-                          entries={dayEntries}
-                          holidayName={holidays.get(day)}
-                          isEditing={isEditing}
-                          onStartEditing={startEditing}
-                          onStopEditing={stopEditing}
-                          onSaveTime={handleSaveTime}
-                          onSavePause={handleSavePause}
-                          isCreating={creatingDay === day}
-                          createBuffer={createBuffer}
-                          onStartCreating={handleStartCreating}
-                          onCreateSave={handleCreateEntry}
-                          onCreateCancel={() => setCreatingDay(null)}
-                          onShowDetails={(day) => {
-                            setSheetDay(day);
-                            setDupDate(day);
-                          }}
-                        />
+                           date={day}
+                           entries={dayEntries}
+                           holidayName={holidays.get(day)}
+                           isEditing={isEditing}
+                           onStartEditing={startEditing}
+                           onStopEditing={stopEditing}
+                           onSaveTime={handleSaveTime}
+                           onSavePause={handleSavePause}
+                           onSaveDuration={handleSaveDuration}
+                           isCreating={creatingDay === day}
+                           createBuffer={createBuffer}
+                           onStartCreating={handleStartCreating}
+                           onCreateSave={handleCreateEntry}
+                           onCreateCancel={() => setCreatingDay(null)}
+                           onUpdateCreateBuffer={onUpdateCreateBuffer}
+                           onShowDetails={(day) => {
+                             setSheetDay(day);
+                             setDupDate(day);
+                           }}
+                         />
 
                         {isLastOfWeek && (
                           <WeekSummaryRow

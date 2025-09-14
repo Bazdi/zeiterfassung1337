@@ -11,6 +11,7 @@ interface EditableTimeCellProps {
   value: string;
   onSave: (newValue: string) => Promise<void>;
   onCancel: () => void;
+  onChange?: (newValue: string) => void;
   placeholder?: string;
   className?: string;
   'aria-label'?: string;
@@ -20,6 +21,7 @@ export function EditableTimeCell({
   value,
   onSave,
   onCancel,
+  onChange,
   placeholder = 'HH:MM',
   className = 'w-[120px] h-10',
   'aria-label': ariaLabel
@@ -78,6 +80,7 @@ export function EditableTimeCell({
     // Real-time validation
     const validation = validateTimeString(newValue);
     setIsValid(validation.isValid || newValue === '');
+    onChange?.(newValue);
   };
 
   return (

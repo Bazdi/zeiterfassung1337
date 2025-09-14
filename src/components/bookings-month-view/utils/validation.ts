@@ -81,20 +81,36 @@ export function validatePauseMinutes(pauseStr: string): TimeValidationResult {
     return { isValid: true }; // Pause is optional
   }
 
-  const pauseMinutes = parseInt(pauseStr, 10);
-  if (isNaN(pauseMinutes)) {
-    return { isValid: false, error: 'Invalid pause duration' };
+  const minutes = parseDurationToMinutes(pauseStr);
+  if (isNaN(minutes)) {
+    return { isValid: false, error: 'Invalid pause duration. Use MM or HH:MM' };
   }
 
-  if (pauseMinutes < 0) {
+  if (minutes < 0) {
     return { isValid: false, error: 'Pause duration cannot be negative' };
   }
 
-  if (pauseMinutes > 24 * 60) { // Max 24 hours
+  if (minutes > 24 * 60) { // Max 24 hours
     return { isValid: false, error: 'Pause duration cannot exceed 24 hours' };
   }
 
   return { isValid: true };
+}
+
+export function parseDurationToMinutes(input: string): number {
+  if (!input) return NaN;
+  const trimmed = input.trim();
+  // Accept "MM" or "H:MM" or "HH:MM"
+  const hhmm = /^([0-9]{1,2}):([0-5][0-9])$/;
+  const mm = /^[0-9]{1,4}$/; // up to 4 digits minutes
+  if (hhmm.test(trimmed)) {
+    const [, h, m] = trimmed.match(hhmm)!;
+    return parseInt(h, 10) * 60 + parseInt(m, 10);
+  }
+  if (mm.test(trimmed)) {
+    return parseInt(trimmed, 10);
+  }
+  return NaN;
 }
 
 /**

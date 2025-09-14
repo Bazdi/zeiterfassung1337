@@ -20,16 +20,18 @@ interface DayRowProps {
   date: string;
   entries: TimeEntry[];
   holidayName?: string;
-  isEditing: (day: string, field: 'start' | 'end' | 'pause') => boolean;
-  onStartEditing: (day: string, field: 'start' | 'end' | 'pause', value: string) => void;
+  isEditing: (day: string, field: 'start' | 'end' | 'pause' | 'duration') => boolean;
+  onStartEditing: (day: string, field: 'start' | 'end' | 'pause' | 'duration', value: string) => void;
   onStopEditing: () => void;
   onSaveTime: (day: string, field: 'start' | 'end', value: string) => Promise<void>;
   onSavePause: (day: string, value: number) => Promise<void>;
+  onSaveDuration: (day: string, value: string) => Promise<void>;
   isCreating: boolean;
   createBuffer: CreateEntryBuffer;
   onStartCreating: (day: string) => void;
   onCreateSave: (day: string, buffer: CreateEntryBuffer) => Promise<void>;
   onCreateCancel: () => void;
+  onUpdateCreateBuffer: (updates: Partial<CreateEntryBuffer>) => void;
   onShowDetails: (day: string) => void;
 }
 
@@ -42,11 +44,13 @@ export const DayRow: React.FC<DayRowProps> = ({
   onStopEditing,
   onSaveTime,
   onSavePause,
+  onSaveDuration,
   isCreating,
   createBuffer,
   onStartCreating,
   onCreateSave,
   onCreateCancel,
+  onUpdateCreateBuffer,
   onShowDetails
 }) => {
   const dateObj = new Date(`${date}T00:00:00Z`);
@@ -92,6 +96,11 @@ export const DayRow: React.FC<DayRowProps> = ({
 
   const handlePauseSave = async (value: number) => {
     await onSavePause(date, value);
+    onStopEditing();
+  };
+
+  const handleDurationSave = async (value: string) => {
+    await onSaveDuration(date, value);
     onStopEditing();
   };
 
@@ -178,6 +187,7 @@ export const DayRow: React.FC<DayRowProps> = ({
               value={createBuffer.start}
               onSave={() => Promise.resolve()} // Handled by create save
               onCancel={onCreateCancel}
+              onChange={(v) => onUpdateCreateBuffer({ start: v })}
               aria-label="Startzeit eingeben"
             />
           ) : null}
@@ -220,6 +230,7 @@ export const DayRow: React.FC<DayRowProps> = ({
               value={createBuffer.end}
               onSave={() => Promise.resolve()} // Handled by create save
               onCancel={onCreateCancel}
+              onChange={(v) => onUpdateCreateBuffer({ end: v })}
               aria-label="Endzeit eingeben"
             />
           ) : null}
@@ -227,7 +238,26 @@ export const DayRow: React.FC<DayRowProps> = ({
 
         {/* IST Column */}
         <td className="py-2 px-2 font-medium">
-          {formatMinutesToHM(calculations.totalMinutes)}
+          {isEditing(date, 'duration') ? (
+            <EditableTimeCell
+              value={formatMinutesToHM(calculations.totalMinutes)}
+              onSave={handleDurationSave}
+              onCancel={onStopEditing}
+              aria-label="Dauer bearbeiten"
+            />
+          ) : (
+            <button
+              className="underline-offset-2 hover:underline px-2 py-1 rounded hover:bg-gray-100 active:bg-gray-200"
+              onClick={() => {
+                const durationStr = formatMinutesToHM(calculations.totalMinutes);
+                onStartEditing(date, 'duration', durationStr);
+                vibrate(8);
+              }}
+              aria-label={`Dauer ${formatMinutesToHM(calculations.totalMinutes)} bearbeiten`}
+            >
+              {formatMinutesToHM(calculations.totalMinutes)}
+            </button>
+          )}
         </td>
 
         {/* Pause Column */}

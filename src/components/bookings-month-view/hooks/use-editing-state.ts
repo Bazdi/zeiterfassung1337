@@ -7,10 +7,10 @@ import { EditingState } from '../types';
 
 interface UseEditingStateResult {
   editing: EditingState | null;
-  startEditing: (day: string, field: 'start' | 'end' | 'pause', value: string) => void;
+  startEditing: (day: string, field: 'start' | 'end' | 'pause' | 'duration', value: string) => void;
   stopEditing: () => void;
   updateValue: (value: string) => void;
-  isEditing: (day: string, field: 'start' | 'end' | 'pause') => boolean;
+  isEditing: (day: string, field: 'start' | 'end' | 'pause' | 'duration') => boolean;
 }
 
 export function useEditingState(): UseEditingStateResult {
@@ -18,7 +18,7 @@ export function useEditingState(): UseEditingStateResult {
 
   const startEditing = useCallback((
     day: string,
-    field: 'start' | 'end' | 'pause',
+    field: 'start' | 'end' | 'pause' | 'duration',
     value: string
   ) => {
     setEditing({ day, field, value });
@@ -36,7 +36,7 @@ export function useEditingState(): UseEditingStateResult {
 
   const isEditing = useCallback((
     day: string,
-    field: 'start' | 'end' | 'pause'
+    field: 'start' | 'end' | 'pause' | 'duration'
   ): boolean => {
     return editing?.day === day && editing?.field === field;
   }, [editing]);

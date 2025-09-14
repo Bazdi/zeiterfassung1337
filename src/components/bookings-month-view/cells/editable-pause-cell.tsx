@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
-import { validatePauseMinutes } from '../utils/validation';
+import { validatePauseMinutes, parseDurationToMinutes } from '../utils/validation';
 import { vibrate } from '../utils/time-helpers';
 
 interface EditablePauseCellProps {
@@ -44,7 +44,7 @@ export function EditablePauseCell({
     setIsValid(validation.isValid);
 
     if (validation.isValid) {
-      const newValue = parseInt(editValue, 10) || 0;
+      const newValue = parseDurationToMinutes(editValue);
       try {
         await onSave(newValue);
         vibrate(10);
@@ -81,14 +81,13 @@ export function EditablePauseCell({
 
   return (
     <Input
-      type="number"
-      min={0}
-      step={5}
+      type="text"
+      inputMode="numeric"
       value={editValue}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
-      placeholder="0"
+      placeholder="MM oder HH:MM"
       className={`${className} ${!isValid ? 'border-red-500 focus:border-red-500' : ''}`}
       aria-label={ariaLabel}
       autoFocus

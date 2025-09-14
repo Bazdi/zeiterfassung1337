@@ -23,7 +23,7 @@ export interface Holiday {
 
 export interface EditingState {
   day: string;
-  field: 'start' | 'end' | 'pause';
+  field: 'start' | 'end' | 'pause' | 'duration';
   value: string;
 }
 
