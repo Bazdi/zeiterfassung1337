@@ -3,9 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Input } from '@/components/ui/input';
 import { validatePauseMinutes, parseDurationToMinutes } from '../utils/validation';
-import { vibrate } from '../utils/time-helpers';
 
 interface EditablePauseCellProps {
   value: string;
@@ -65,7 +63,6 @@ export function EditablePauseCell({
       const newValue = parseDurationToMinutes(editValue);
       try {
         await onSave(newValue);
-        vibrate(10);
       } catch (error) {
         console.error('Failed to save pause:', error);
         setIsValid(false);
@@ -96,7 +93,7 @@ export function EditablePauseCell({
     const validation = validatePauseMinutes(newValue);
     setIsValid(validation.isValid || newValue === '');
 
-    // Call onChange with the string if valid
+    // Call onChange with parsed minutes if valid
     if (onChange && validation.isValid) {
       onChange(newValue);
     }
@@ -111,7 +108,7 @@ export function EditablePauseCell({
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
       placeholder="MM oder HH:MM"
-      className={`${className} ${!isValid ? 'border-red-500 focus:border-red-500' : ''} px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+      className={`${className} px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${!isValid ? 'border-red-500 focus:border-red-500' : ''}`}
       aria-label={ariaLabel}
       style={style}
     />

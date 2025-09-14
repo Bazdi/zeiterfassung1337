@@ -3,9 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Input } from '@/components/ui/input';
 import { validateTimeString } from '../utils/validation';
-import { vibrate } from '../utils/time-helpers';
 
 interface EditableTimeCellProps {
   value: string;
@@ -66,7 +64,6 @@ export function EditableTimeCell({
     if (validation.isValid) {
       try {
         await onSave(editValue);
-        vibrate(10);
       } catch (error) {
         console.error('Failed to save time:', error);
         setIsValid(false);
@@ -96,6 +93,7 @@ export function EditableTimeCell({
     // Real-time validation
     const validation = validateTimeString(newValue);
     setIsValid(validation.isValid || newValue === '');
+
     onChange?.(newValue);
   };
 
@@ -108,7 +106,7 @@ export function EditableTimeCell({
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
       placeholder={placeholder}
-      className={`${className} ${!isValid ? 'border-red-500 focus:border-red-500' : ''} px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+      className={`${className} px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${!isValid ? 'border-red-500 focus:border-red-500' : ''}`}
       aria-label={ariaLabel}
       style={style}
     />
