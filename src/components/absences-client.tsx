@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react"
 import { useSession } from "next-auth/react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -10,10 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { LogOut, User, Settings, UserCircle, Plus } from "lucide-react"
+import { Plus } from "lucide-react"
 import AppHeader from "@/components/app-header"
 import { AuthGuard } from "@/components/auth-guard"
-import { signOut } from "next-auth/react"
 import { toast } from "sonner"
 import dynamic from "next/dynamic"
 import MobileTabbar from "@/components/mobile-tabbar"
@@ -82,11 +80,11 @@ export function AbsencesClient({ initialAbsences }: { initialAbsences?: Absence[
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <AppHeader title="Abwesenheiten" />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-[env(safe-area-inset-bottom)]">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Meine Abwesenheiten</h2>
+            <h2 className="text-2xl font-bold text-foreground">Meine Abwesenheiten</h2>
             <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
               <DialogTrigger asChild>
                 <Button><Plus className="h-4 w-4 mr-2" />Abwesenheit hinzufügen</Button>
@@ -130,7 +128,7 @@ export function AbsencesClient({ initialAbsences }: { initialAbsences?: Absence[
           {loading ? (
             <div className="text-center py-8">Lade Abwesenheiten...</div>
           ) : absences.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">Noch keine Abwesenheiten eingetragen.</div>
+            <div className="text-center py-8 text-muted-foreground">Noch keine Abwesenheiten eingetragen.</div>
           ) : (
             <Virtuoso
               style={{ height: '70vh' }}
@@ -149,11 +147,11 @@ export function AbsencesClient({ initialAbsences }: { initialAbsences?: Absence[
                                 {absence.type === "SICK" ? "Krankheit" : "Urlaub"}
                               </Badge>
                             </div>
-                            <div className="flex items-center space-x-4 text-sm text-gray-600">
+                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                               <span>Stunden: {absence.hours}h</span>
-                              <span>Betrag: {absence.amount.toFixed(2)}€</span>
+                              <span>Betrag: {absence.amount.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' })}</span>
                             </div>
-                            {absence.note && (<p className="text-sm text-gray-700">{absence.note}</p>)}
+                            {absence.note && (<p className="text-sm text-foreground/80">{absence.note}</p>)}
                           </div>
                         </div>
                       </CardContent>

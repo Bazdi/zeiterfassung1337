@@ -1,13 +1,12 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
-import { useSession, signOut } from "next-auth/react"
-import Link from "next/link"
+import { useSession } from "next-auth/react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { LogOut, User, List, Settings, UserCircle, ArrowLeft } from "lucide-react"
+import { UserCircle } from "lucide-react"
 import AppHeader from "@/components/app-header"
 import { AuthGuard } from "@/components/auth-guard"
 import { toast } from "sonner"
@@ -41,10 +40,7 @@ export default function Profile() {
       const response = await fetch("/api/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          currentPassword,
-          newPassword,
-        }),
+        body: JSON.stringify({ currentPassword, newPassword }),
       })
 
       if (response.ok) {
@@ -73,10 +69,9 @@ export default function Profile() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background">
         <AppHeader title="Profil" />
 
-        {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-[env(safe-area-inset-bottom)]">
           <div className="max-w-md mx-auto">
             <Card>
@@ -90,7 +85,7 @@ export default function Profile() {
                 {/* App Installation */}
                 <div className="space-y-2">
                   <h3 className="text-lg font-medium">App installieren</h3>
-                  <p className="text-sm text-gray-600">Füge die App deinem Startbildschirm hinzu, um schneller darauf zuzugreifen.</p>
+                  <p className="text-sm text-muted-foreground">Füge die App deinem Startbildschirm hinzu, um schneller darauf zuzugreifen.</p>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
@@ -109,6 +104,7 @@ export default function Profile() {
                     </Button>
                   </div>
                 </div>
+
                 <div className="space-y-4">
                   <div>
                     <Label>Benutzername</Label>
@@ -150,11 +146,7 @@ export default function Profile() {
                       onChange={(e) => setConfirmPassword(e.target.value)}
                     />
                   </div>
-                  <Button
-                    onClick={handlePasswordChange}
-                    disabled={loading}
-                    className="w-full"
-                  >
+                  <Button onClick={handlePasswordChange} disabled={loading} className="w-full">
                     {loading ? "Wird geändert..." : "Passwort ändern"}
                   </Button>
                 </div>
@@ -167,3 +159,4 @@ export default function Profile() {
     </AuthGuard>
   )
 }
+

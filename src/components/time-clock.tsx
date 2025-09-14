@@ -261,14 +261,8 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
           <div className="flex items-center gap-3 w-full justify-center pb-[env(safe-area-inset-bottom)]">
             <Button
               size="lg"
-              className={`
-                w-full max-w-xs h-16 rounded-full text-lg font-semibold
-                transition-all duration-300 transform hover:scale-105
-              ${effectiveCheckedIn 
-                  ? 'bg-red-500 hover:bg-red-600 text-white' 
-                  : 'bg-green-500 hover:bg-green-600 text-white'
-              }
-              `}
+              variant={effectiveCheckedIn ? "destructive" : "default"}
+              className="w-full max-w-xs h-12 text-base font-semibold"
               onClick={effectiveCheckedIn ? handleCheckOut : handleCheckIn}
               disabled={isCheckingIn || isCheckingOut || statusLoading}
             >
@@ -291,7 +285,7 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
               <Button
                 variant="outline"
                 size="lg"
-                className={`h-16 rounded-full w-32 ${isPaused ? 'border-orange-500 text-orange-600' : ''}`}
+                className="h-12 w-32"
                 onClick={togglePause}
                 disabled={isCheckingIn || isCheckingOut || isPausing || statusLoading}
               >
@@ -324,12 +318,12 @@ export function TimeClock({ className, onTimeEntryChange }: TimeClockProps) {
                   })}
                 </span>
               </div>
-              <div className="text-lg font-bold text-blue-600">
+              <div className="text-lg font-bold text-foreground">
                 {formatHMS(runningSeconds)}
               </div>
               <div className="text-xs text-gray-500">Laufzeit (hh:mm:ss)</div>
               {currentPauseSeconds > 0 && (
-                <div className="text-xs text-orange-600 mt-1">
+                <div className="text-xs text-muted-foreground mt-1">
                   Pause: {formatHMS(currentPauseSeconds)}
                 </div>
               )}

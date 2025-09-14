@@ -15,7 +15,6 @@ import { useAllReports } from "@/hooks/use-reports"
 import { useSalary } from "@/hooks/use-salary"
 import { useDailyReport } from "@/hooks/use-daily-report"
 import { formatHours } from "@/lib/utils"
-import { StatsTile } from "@/components/stats-tile"
 import MobileTabbar from "@/components/mobile-tabbar"
 
 // Load the clock only on the client to keep the RSC shell lean
@@ -56,7 +55,6 @@ export function HomeDashboard({
   const { status, statusLoading, formatDuration } = useTimeEntries()
   const { week, month, invalidateReports } = useAllReports()
   const { salary, isLoading: salaryLoading } = useSalary()
-  const formatEUR = (n?: number) => new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' }).format(n ?? 0)
   const todayISO = new Date().toISOString().slice(0,10)
   const [dailyDate, setDailyDate] = useState<string>(todayISO)
   const { data: daily, isLoading: dailyLoading } = useDailyReport(dailyDate)
@@ -86,7 +84,7 @@ export function HomeDashboard({
                 <CardContent className="pt-0">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Gesamtzeit:</span>
+                      <span className="text-sm text-gray-600">Gesamtzeit:</span>
                       <span className="font-semibold text-lg shrink-0 text-right">
                         {statusLoading
                           ? (initialStatus ? formatDuration(initialStatus.todaySummary.totalMinutes) : "...")
@@ -126,13 +124,13 @@ export function HomeDashboard({
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Sessions:</span>
+                      <span className="text-sm text-gray-600">Sessions:</span>
                       <span className="font-medium">
                         {statusLoading ? (initialStatus ? initialStatus.todaySummary.entryCount : "...") : todayCount || 0}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Status:</span>
+                      <span className="text-sm text-gray-600">Status:</span>
                       <Badge variant={(status?.isCheckedIn ?? initialStatus?.isCheckedIn) ? "default" : "outline"}>
                         {(status?.isCheckedIn ?? initialStatus?.isCheckedIn) ? "Aktiv" : "Nicht aktiv"}
                       </Badge>
@@ -148,13 +146,13 @@ export function HomeDashboard({
                 <CardContent className="pt-0">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Gesamtzeit:</span>
+                      <span className="text-sm text-gray-600">Gesamtzeit:</span>
                       <span className="font-semibold text-lg shrink-0 text-right">
                         {week.isLoading ? (initialReports?.week ? `${Math.floor((initialReports.week.totalMinutes||0)/60)}h ${(initialReports.week.totalMinutes||0)%60}m` : "...") : `${Math.floor((week.data?.totalMinutes||0)/60)}h ${(week.data?.totalMinutes||0)%60}m`}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Pause:</span>
+                      <span className="text-sm text-gray-600">Pause:</span>
                       <span className="font-medium">
                         {week.isLoading
                           ? (initialReports?.week ? `${Math.floor((initialReports.week.pauseMinutes||0)/60)}h ${(initialReports.week.pauseMinutes||0)%60}m` : "...")
@@ -162,13 +160,13 @@ export function HomeDashboard({
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Arbeitstage:</span>
+                      <span className="text-sm text-gray-600">Arbeitstage:</span>
                       <span className="font-medium">
                         {week.isLoading ? (initialReports?.week?.workDayCount ?? "...") : (week.data?.workDayCount || 0)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">ÃƒËœ pro Tag:</span>
+                      <span className="text-sm text-gray-600">Ã˜ pro Tag:</span>
                       <span className="font-medium">
                         {week.isLoading ? (initialReports?.week ? `${Math.floor((initialReports.week.avgMinutesPerDay||0)/60)}h ${(initialReports.week.avgMinutesPerDay||0)%60}m` : "...") : `${Math.floor((week.data?.avgMinutesPerDay||0)/60)}h ${(week.data?.avgMinutesPerDay||0)%60}m`}
                       </span>
@@ -184,13 +182,13 @@ export function HomeDashboard({
                 <CardContent className="pt-0">
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Gesamtzeit:</span>
+                      <span className="text-sm text-gray-600">Gesamtzeit:</span>
                       <span className="font-semibold text-lg shrink-0 text-right">
                         {month.isLoading ? (initialReports?.month ? `${Math.floor((initialReports.month.totalMinutes||0)/60)}h ${(initialReports.month.totalMinutes||0)%60}m` : "...") : `${Math.floor((month.data?.totalMinutes||0)/60)}h ${(month.data?.totalMinutes||0)%60}m`}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Pause:</span>
+                      <span className="text-sm text-gray-600">Pause:</span>
                       <span className="font-medium">
                         {month.isLoading
                           ? (initialReports?.month ? `${Math.floor((initialReports.month.pauseMinutes||0)/60)}h ${(initialReports.month.pauseMinutes||0)%60}m` : "...")
@@ -198,13 +196,13 @@ export function HomeDashboard({
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Arbeitstage:</span>
+                      <span className="text-sm text-gray-600">Arbeitstage:</span>
                       <span className="font-medium">
                         {month.isLoading ? (initialReports?.month?.workDayCount ?? "...") : (month.data?.workDayCount || 0)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">ÃƒËœ pro Tag:</span>
+                      <span className="text-sm text-gray-600">Ã˜ pro Tag:</span>
                       <span className="font-medium">
                         {month.isLoading ? (initialReports?.month ? `${Math.floor((initialReports.month.avgMinutesPerDay||0)/60)}h ${(initialReports.month.avgMinutesPerDay||0)%60}m` : "...") : `${Math.floor((month.data?.avgMinutesPerDay||0)/60)}h ${(month.data?.avgMinutesPerDay||0)%60}m`}
                       </span>
@@ -215,7 +213,7 @@ export function HomeDashboard({
             </div>
 
             <div className="mt-12 lg:col-span-3">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">MonatsÃƒÂ¼bersicht</h2>
+              <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">MonatsÃ¼bersicht</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <Card className="shadow-lg border-2 min-w-[320px] md:min-w-[360px]">
                   <CardHeader className="pb-6">
@@ -227,7 +225,7 @@ export function HomeDashboard({
                   <CardContent className="pt-6">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">Reguläre Arbeitszeit:</span>
+                        <span className="text-base text-gray-700 min-w-0 break-words">RegulÃ¤re Arbeitszeit:</span>
                         <span className="font-semibold text-lg shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? formatHours(initialSalary.regularWork.hours) : "...") : formatHours(salary?.regularWork.hours)}
                         </span>
@@ -246,7 +244,7 @@ export function HomeDashboard({
                       </div>
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
                         <span className="text-base text-gray-700 min-w-0 break-words">Monatszuschlag (Betrag)</span>
-                        <span className="font-semibold text-lg shrink-0 text-right">
+                        <span className="font-semibold text-lg text-green-600 shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? formatHours(initialSalary.monthlyBonus.hours) : "...") : formatHours(salary?.monthlyBonus.hours)}
                         </span>
                       </div>
@@ -270,39 +268,39 @@ export function HomeDashboard({
                   <CardContent className="pt-6">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">RegulÃƒÂ¤re VergÃƒÂ¼tung:</span>
+                        <span className="text-base text-gray-700 min-w-0 break-words">RegulÃ¤re VergÃ¼tung:</span>
                         <span className="font-semibold text-lg shrink-0 text-right">
-                          {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.regularWork.earnings)}` : "...") : `${formatEUR(salary?.regularWork.earnings)}`}
+                          {salaryLoading ? (initialSalary ? `${initialSalary.regularWork.earnings.toFixed(2)}â‚¬` : "...") : `${salary?.regularWork.earnings.toFixed(2) || 0}â‚¬`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">ZuschlagsvergÃƒÂ¼tung:</span>
+                        <span className="text-base text-gray-700 min-w-0 break-words">ZuschlagsvergÃ¼tung:</span>
                         <span className="font-semibold text-lg shrink-0 text-right">
-                          {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.surchargeWork.earnings)}` : "...") : `${formatEUR(salary?.surchargeWork.earnings)}`}
+                          {salaryLoading ? (initialSalary ? `${initialSalary.surchargeWork.earnings.toFixed(2)}â‚¬` : "...") : `${salary?.surchargeWork.earnings.toFixed(2) || 0}â‚¬`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">AbwesenheitsvergÃƒÂ¼tung:</span>
+                        <span className="text-base text-gray-700 min-w-0 break-words">AbwesenheitsvergÃ¼tung:</span>
                         <span className="font-semibold text-lg shrink-0 text-right">
-                          {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.absences.earnings)}` : "...") : `${formatEUR(salary?.absences.earnings)}`}
+                          {salaryLoading ? (initialSalary ? `${initialSalary.absences.earnings.toFixed(2)}â‚¬` : "...") : `${salary?.absences.earnings.toFixed(2) || 0}â‚¬`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
                         <span className="text-base text-gray-700 min-w-0 break-words">Monatszuschlag (Betrag)</span>
-                        <span className="font-semibold text-lg shrink-0 text-right">
-                          {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.monthlyBonus.earnings)}` : "...") : `${formatEUR(salary?.monthlyBonus.earnings)}`}
+                        <span className="font-semibold text-lg text-green-600 shrink-0 text-right">
+                          {salaryLoading ? (initialSalary ? `${initialSalary.monthlyBonus.earnings.toFixed(2)}â‚¬` : "...") : `${salary?.monthlyBonus.earnings.toFixed(2) || 0}â‚¬`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 py-4 border-t bg-muted px-4 rounded">
                         <span className="text-lg font-bold text-gray-900">Bruttoverdienst:</span>
-                        <span className="font-bold text-2xl shrink-0 text-right">
-                          {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.totals.grossEarnings)}` : "...") : `${formatEUR(salary?.totals.grossEarnings)}`}
+                        <span className="font-bold text-2xl text-green-600 shrink-0 text-right">
+                          {salaryLoading ? (initialSalary ? `${initialSalary.totals.grossEarnings.toFixed(2)}â‚¬` : "...") : `${salary?.totals.grossEarnings.toFixed(2) || 0}â‚¬`}
                         </span>
                       </div>
                       <div className="flex justify-between items-center py-2 bg-muted px-4 rounded">
                         <span className="text-base font-medium text-gray-900">Nettoverdienst (70%):</span>
                         <span className="font-bold text-xl shrink-0 text-right">
-                          {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.totals.netEarnings)}` : "...") : `${formatEUR(salary?.totals.netEarnings)}`}
+                          {salaryLoading ? (initialSalary ? `${initialSalary.totals.netEarnings.toFixed(2)}â‚¬` : "...") : `${salary?.totals.netEarnings.toFixed(2) || 0}â‚¬`}
                         </span>
                       </div>
                     </div>
@@ -336,7 +334,7 @@ export function HomeDashboard({
                       <div className="text-center">
                         <div className="text-sm text-purple-700 font-medium">Sonntag</div>
                         <div className="text-lg font-bold text-purple-800">25%</div>
-                        <div className="text-xs text-purple-600">ganztÃƒÂ¤gig</div>
+                        <div className="text-xs text-purple-600">ganztÃ¤gig</div>
                       </div>
                     </CardContent>
                   </Card>
@@ -371,26 +369,42 @@ export function HomeDashboard({
                 </CardHeader>
                 <CardContent className="pt-0">
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <StatsTile label="Netto">
-                      {dailyLoading ? "..." : `${Math.floor(((daily?.totalMinutes||0))/60)}h ${((daily?.totalMinutes||0))%60}m`}
-                    </StatsTile>
-                    <StatsTile label="Pause">
-                      {dailyLoading ? "..." : `${Math.floor(((daily?.pauseMinutes||0))/60)}h ${((daily?.pauseMinutes||0))%60}m`}
-                    </StatsTile>
-                    <StatsTile label="Brutto">
-                      {dailyLoading ? "..." : `${Math.floor(((daily?.grossMinutes||0))/60)}h ${((daily?.grossMinutes||0))%60}m`}
-                    </StatsTile>
+                    <div className="rounded-md border p-3 bg-card text-center">
+                      <div className="text-xs text-muted-foreground">Netto</div>
+                      <div className="text-lg font-semibold">
+                        {dailyLoading ? "..." : `${Math.floor(((daily?.totalMinutes||0))/60)}h ${((daily?.totalMinutes||0))%60}m`}
+                      </div>
+                    </div>
+                    <div className="rounded-md border p-3 bg-card text-center">
+                      <div className="text-xs text-muted-foreground">Pause</div>
+                      <div className="text-lg font-semibold">
+                        {dailyLoading ? "..." : `${Math.floor(((daily?.pauseMinutes||0))/60)}h ${((daily?.pauseMinutes||0))%60}m`}
+                      </div>
+                    </div>
+                    <div className="rounded-md border p-3 bg-card text-center">
+                      <div className="text-xs text-muted-foreground">Brutto</div>
+                      <div className="text-lg font-semibold text-blue-600">
+                        {dailyLoading ? "..." : `${Math.floor(((daily?.grossMinutes||0))/60)}h ${((daily?.grossMinutes||0))%60}m`}
+                      </div>
+                    </div>
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-                    <StatsTile label="Einträge">
-                      {dailyLoading ? "..." : (daily?.entryCount || 0)}
-                    </StatsTile>
-                    <StatsTile label="Erster Check-in">
-                      {dailyLoading ? "..." : (daily?.firstCheckIn ? new Date(daily.firstCheckIn).toLocaleTimeString("de-DE", {hour: "2-digit", minute: "2-digit", hour12: false, hourCycle: 'h23'}) : "-")}
-                    </StatsTile>
-                    <StatsTile label="Letzter Check-out">
-                      {dailyLoading ? "..." : (daily?.lastCheckOut ? new Date(daily.lastCheckOut).toLocaleTimeString("de-DE", {hour: "2-digit", minute: "2-digit", hour12: false, hourCycle: 'h23'}) : "-")}
-                    </StatsTile>
+                    <div className="rounded-md border p-3 bg-card text-center">
+                      <div className="text-[10px] text-gray-500">EintrÃ¤ge</div>
+                      <div className="text-lg font-semibold">{dailyLoading ? "..." : daily?.entryCount || 0}</div>
+                    </div>
+                    <div className="rounded-md border p-3 bg-white text-center">
+                      <div className="text-xs text-muted-foreground">Erster Check-in</div>
+                      <div className="text-sm font-semibold">
+                        {dailyLoading ? "..." : daily?.firstCheckIn ? new Date(daily.firstCheckIn).toLocaleTimeString("de-DE", {hour: "2-digit", minute: "2-digit", hour12: false, hourCycle: 'h23'}) : "-"}
+                      </div>
+                    </div>
+                    <div className="rounded-md border p-3 bg-card text-center">
+                      <div className="text-xs text-muted-foreground">Letzter Check-out</div>
+                      <div className="text-sm font-semibold">
+                        {dailyLoading ? "..." : daily?.lastCheckOut ? new Date(daily.lastCheckOut).toLocaleTimeString("de-DE", {hour: "2-digit", minute: "2-digit", hour12: false, hourCycle: 'h23'}) : "-"}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-2 mt-4">
@@ -450,8 +464,4 @@ export function HomeDashboard({
     </AuthGuard>
   )
 }
-
-
-
-
 

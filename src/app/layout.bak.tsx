@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
@@ -20,12 +20,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Zeiterfassung - Mobile Time Tracking",
-  description: "Mobile-first Zeiterfassung für Teams mit Check-in/Check-out, Reports und Export",
+  description: "Mobile-first Zeiterfassung fÃ¼r Teams mit Check-in/Check-out, Reports und Export",
   keywords: ["Zeiterfassung", "Time Tracking", "Mobile", "Team", "Next.js"],
   authors: [{ name: "Zeiterfassung Team" }],
   openGraph: {
     title: "Zeiterfassung - Mobile Time Tracking",
-    description: "Mobile-first Zeiterfassung für Teams mit Check-in/Check-out, Reports und Export",
+    description: "Mobile-first Zeiterfassung fÃ¼r Teams mit Check-in/Check-out, Reports und Export",
     type: "website",
   },
 };

@@ -21,8 +21,8 @@ export default function MobileTabbar() {
           const Icon = it.icon
           return (
             <li key={it.href} className="text-center">
-              <Link href={it.href} prefetch={false} aria-label={it.label} className={`flex flex-col items-center justify-center h-14 text-[11px] ${active ? "text-blue-600" : "text-gray-600"}`}>
-                <Icon className={`h-5 w-5 ${active ? "text-blue-600" : "text-gray-500"}`} />
+              <Link href={it.href} prefetch={false} aria-label={it.label} className={`flex flex-col items-center justify-center h-14 text-[11px] ${active ? "text-primary" : "text-gray-600"}`}>
+                <Icon className={`h-5 w-5 ${active ? "text-primary" : "text-gray-500"}`} />
                 <span className="leading-3 mt-0.5 max-w-[88px] truncate" title={it.label}>{it.label}</span>
               </Link>
             </li>
