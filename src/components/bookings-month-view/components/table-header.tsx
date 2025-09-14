@@ -19,8 +19,6 @@ export function TableHeader({ className = 'text-left text-gray-600 border-b' }: 
         <th className="py-2 px-2" scope="col">Pause</th>
         <th className="py-2 px-2" scope="col">SOLL</th>
         <th className="py-2 px-2" scope="col">DIFF</th>
-        <th className="py-2 px-2" scope="col">Notiz</th>
-        <th className="py-2 px-2 w-[130px]" scope="col">Aktion</th>
       </tr>
     </thead>
   );

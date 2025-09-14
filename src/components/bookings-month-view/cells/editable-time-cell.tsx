@@ -2,7 +2,7 @@
  * Editable time cell component for inline editing
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { validateTimeString } from '../utils/validation';
 import { vibrate } from '../utils/time-helpers';
@@ -15,6 +15,8 @@ interface EditableTimeCellProps {
   placeholder?: string;
   className?: string;
   'aria-label'?: string;
+  style?: React.CSSProperties;
+  shouldFocus?: boolean;
 }
 
 export function EditableTimeCell({
@@ -24,14 +26,28 @@ export function EditableTimeCell({
   onChange,
   placeholder = 'HH:MM',
   className = 'w-[120px] h-10',
-  'aria-label': ariaLabel
+  'aria-label': ariaLabel,
+  style,
+  shouldFocus = false
 }: EditableTimeCellProps) {
   const [editValue, setEditValue] = useState(value);
   const [isValid, setIsValid] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setEditValue(value);
   }, [value]);
+
+  useEffect(() => {
+    if (shouldFocus && inputRef.current) {
+      requestAnimationFrame(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.select();
+        }
+      });
+    }
+  }, [shouldFocus]);
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -84,17 +100,17 @@ export function EditableTimeCell({
   };
 
   return (
-    <Input
-      type="time"
-      step={300} // 5-minute steps
+    <input
+      ref={inputRef}
+      type="text"
       value={editValue}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
       placeholder={placeholder}
-      className={`${className} ${!isValid ? 'border-red-500 focus:border-red-500' : ''}`}
+      className={`${className} ${!isValid ? 'border-red-500 focus:border-red-500' : ''} px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
       aria-label={ariaLabel}
-      autoFocus
+      style={style}
     />
   );
 }

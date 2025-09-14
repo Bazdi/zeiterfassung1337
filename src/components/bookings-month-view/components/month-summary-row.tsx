@@ -37,7 +37,6 @@ export function MonthSummaryRow({
       <td className={`py-2 px-2 font-semibold ${diff < 0 ? 'text-red-700' : diff > 0 ? 'text-green-800' : 'text-gray-700'}`}>
         {formatHoursDifference(diff)}
       </td>
-      <td colSpan={2}></td>
     </tr>
   );
 }

@@ -118,17 +118,19 @@ export default function BookingsMonthView({
     if (dayEntries.length === 0) return;
 
     const targetEntry = field === 'start' ? dayEntries[0] : dayEntries[dayEntries.length - 1];
-    const isoTime = toISOString(day, timeStr);
+    const currentDuration = targetEntry.duration_minutes || 0;
 
     const updates: Partial<TimeEntry> = {};
     if (field === 'start') {
-      updates.start_utc = isoTime;
-      if (targetEntry.end_utc) {
-        updates.end_utc = targetEntry.end_utc;
-      }
+      const newStartIso = toISOString(day, timeStr);
+      const newEndIso = new Date(new Date(newStartIso).getTime() + currentDuration * 60000).toISOString();
+      updates.start_utc = newStartIso;
+      updates.end_utc = newEndIso;
     } else {
-      updates.end_utc = isoTime;
-      updates.start_utc = targetEntry.start_utc;
+      const newEndIso = toISOString(day, timeStr);
+      const newStartIso = new Date(new Date(newEndIso).getTime() - currentDuration * 60000).toISOString();
+      updates.start_utc = newStartIso;
+      updates.end_utc = newEndIso;
     }
 
     await updateEntry(targetEntry.id, updates);

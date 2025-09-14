@@ -151,7 +151,7 @@ export const DayRow: React.FC<DayRowProps> = ({
         </td>
 
         {/* Start Time Column */}
-        <td className="py-2 px-2">
+        <td key={`start-${date}-${isCreating ? 'creating' : 'normal'}`} className="py-2 px-2">
           {isEditing(date, 'start') ? (
             <EditableTimeCell
               value={calculations.first ? new Date(calculations.first.start_utc).toLocaleTimeString('de-DE', {
@@ -182,19 +182,36 @@ export const DayRow: React.FC<DayRowProps> = ({
                 minute: '2-digit'
               })}
             </button>
-          ) : isCreating ? (
-            <EditableTimeCell
-              value={createBuffer.start}
-              onSave={() => Promise.resolve()} // Handled by create save
-              onCancel={onCreateCancel}
-              onChange={(v) => onUpdateCreateBuffer({ start: v })}
-              aria-label="Startzeit eingeben"
-            />
-          ) : null}
+          ) : (
+            <>
+              <div style={{ position: 'relative' }}>
+                <EditableTimeCell
+                  value={createBuffer.start}
+                  onSave={() => handleCreateSave({ note: '', category: 'REGULAR' })}
+                  onCancel={onCreateCancel}
+                  onChange={(v) => onUpdateCreateBuffer({ start: v })}
+                  aria-label="Startzeit eingeben"
+                  style={{ opacity: isCreating ? 1 : 0, pointerEvents: isCreating ? 'auto' : 'none' }}
+                  shouldFocus={isCreating}
+                />
+                <button
+                  className="underline-offset-2 hover:underline px-2 py-1 rounded hover:bg-gray-100 active:bg-gray-200 text-gray-400"
+                  onClick={() => {
+                    onStartCreating(date);
+                    vibrate(8);
+                  }}
+                  style={{ opacity: isCreating ? 0 : 1, pointerEvents: isCreating ? 'none' : 'auto', position: 'absolute', top: 0, left: 0 }}
+                  aria-label="Neuen Eintrag erstellen"
+                >
+                  --:--
+                </button>
+              </div>
+            </>
+          )}
         </td>
 
         {/* End Time Column */}
-        <td className="py-2 px-2">
+        <td key={`end-${date}-${isCreating ? 'creating' : 'normal'}`} className="py-2 px-2">
           {isEditing(date, 'end') ? (
             <EditableTimeCell
               value={calculations.last?.end_utc ? new Date(calculations.last.end_utc).toLocaleTimeString('de-DE', {
@@ -225,15 +242,32 @@ export const DayRow: React.FC<DayRowProps> = ({
                 minute: '2-digit'
               })}
             </button>
-          ) : isCreating ? (
-            <EditableTimeCell
-              value={createBuffer.end}
-              onSave={() => Promise.resolve()} // Handled by create save
-              onCancel={onCreateCancel}
-              onChange={(v) => onUpdateCreateBuffer({ end: v })}
-              aria-label="Endzeit eingeben"
-            />
-          ) : null}
+          ) : (
+            <>
+              <div style={{ position: 'relative' }}>
+                <EditableTimeCell
+                  value={createBuffer.end}
+                  onSave={() => handleCreateSave({ note: '', category: 'REGULAR' })}
+                  onCancel={onCreateCancel}
+                  onChange={(v) => onUpdateCreateBuffer({ end: v })}
+                  aria-label="Endzeit eingeben"
+                  style={{ opacity: isCreating ? 1 : 0, pointerEvents: isCreating ? 'auto' : 'none' }}
+                  shouldFocus={isCreating}
+                />
+                <button
+                  className="underline-offset-2 hover:underline px-2 py-1 rounded hover:bg-gray-100 active:bg-gray-200 text-gray-400"
+                  onClick={() => {
+                    onStartCreating(date);
+                    vibrate(8);
+                  }}
+                  style={{ opacity: isCreating ? 0 : 1, pointerEvents: isCreating ? 'none' : 'auto', position: 'absolute', top: 0, left: 0 }}
+                  aria-label="Neuen Eintrag erstellen"
+                >
+                  --:--
+                </button>
+              </div>
+            </>
+          )}
         </td>
 
         {/* IST Column */}
@@ -261,25 +295,50 @@ export const DayRow: React.FC<DayRowProps> = ({
         </td>
 
         {/* Pause Column */}
-        <td className="py-2 px-2">
+        <td key={`pause-${date}-${isCreating ? 'creating' : 'normal'}`} className="py-2 px-2">
           {isEditing(date, 'pause') ? (
             <EditablePauseCell
-              value={calculations.pauseTotal}
+              value={formatMinutesToHM(calculations.pauseTotal)}
               onSave={handlePauseSave}
               onCancel={onStopEditing}
               aria-label="Pause bearbeiten"
             />
-          ) : (
+          ) : calculations.pauseTotal > 0 ? (
             <button
               className="underline-offset-2 hover:underline px-2 py-1 rounded hover:bg-gray-100 active:bg-gray-200"
               onClick={() => {
-                onStartEditing(date, 'pause', String(calculations.pauseTotal));
+                onStartEditing(date, 'pause', formatMinutesToHM(calculations.pauseTotal));
                 vibrate(8);
               }}
               aria-label={`Pause ${formatMinutesToHM(calculations.pauseTotal)} bearbeiten`}
             >
               {formatMinutesToHM(calculations.pauseTotal)}
             </button>
+          ) : (
+            <>
+              <div style={{ position: 'relative' }}>
+                <EditablePauseCell
+                  value={createBuffer.pause || '0'}
+                  onSave={() => handleCreateSave({ note: '', category: 'REGULAR' })}
+                  onCancel={onCreateCancel}
+                  onChange={(v) => onUpdateCreateBuffer({ pause: v })}
+                  aria-label="Pause eingeben"
+                  style={{ opacity: isCreating ? 1 : 0, pointerEvents: isCreating ? 'auto' : 'none' }}
+                  shouldFocus={isCreating}
+                />
+                <button
+                  className="underline-offset-2 hover:underline px-2 py-1 rounded hover:bg-gray-100 active:bg-gray-200 text-gray-400"
+                  onClick={() => {
+                    onStartCreating(date);
+                    vibrate(8);
+                  }}
+                  style={{ opacity: isCreating ? 0 : 1, pointerEvents: isCreating ? 'none' : 'auto', position: 'absolute', top: 0, left: 0 }}
+                  aria-label="Neuen Eintrag erstellen"
+                >
+                  --
+                </button>
+              </div>
+            </>
           )}
         </td>
 
@@ -293,54 +352,6 @@ export const DayRow: React.FC<DayRowProps> = ({
           {formatHoursDifference(calculations.diffMinutes)}
         </td>
 
-        {/* Notes Column */}
-        <td className="py-2 px-2 text-gray-700 max-w-[360px]">
-          <NotesCell
-            notes={entries.map(e => e.note).filter(Boolean).filter((note): note is string => note !== null)}
-            category={calculations.representativeCategory}
-            isCreating={isCreating}
-            onCreateSave={handleCreateSave}
-            onCreateCancel={onCreateCancel}
-          />
-        </td>
-
-        {/* Action Column */}
-        <td className="py-2 px-2 text-right">
-          {isCreating ? (
-            <div className="flex gap-2 justify-end">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => {
-                  onCreateCancel();
-                  vibrate(6);
-                }}
-                aria-label="Erstellung abbrechen"
-              >
-                Abbrechen
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => handleCreateSave({ note: createBuffer.note, category: createBuffer.category })}
-                aria-label="Eintrag erstellen"
-              >
-                Speichern
-              </Button>
-            </div>
-          ) : (
-            <Button
-              size="sm"
-              className="h-9"
-              onClick={() => {
-                onStartCreating(date);
-                vibrate(8);
-              }}
-              aria-label="Neuen Eintrag erstellen"
-            >
-              Neu
-            </Button>
-          )}
-        </td>
       </tr>
     </>
   );

@@ -2,32 +2,50 @@
  * Editable pause cell component for inline editing
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { validatePauseMinutes, parseDurationToMinutes } from '../utils/validation';
 import { vibrate } from '../utils/time-helpers';
 
 interface EditablePauseCellProps {
-  value: number;
+  value: string;
   onSave: (newValue: number) => Promise<void>;
   onCancel: () => void;
+  onChange?: (newValue: string) => void;
   className?: string;
   'aria-label'?: string;
+  style?: React.CSSProperties;
+  shouldFocus?: boolean;
 }
 
 export function EditablePauseCell({
   value,
   onSave,
   onCancel,
+  onChange,
   className = 'w-[110px] h-10',
-  'aria-label': ariaLabel
+  'aria-label': ariaLabel,
+  style,
+  shouldFocus = false
 }: EditablePauseCellProps) {
   const [editValue, setEditValue] = useState(String(value));
   const [isValid, setIsValid] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setEditValue(String(value));
   }, [value]);
+
+  useEffect(() => {
+    if (shouldFocus && inputRef.current) {
+      requestAnimationFrame(() => {
+        if (inputRef.current) {
+          inputRef.current.focus();
+          inputRef.current.select();
+        }
+      });
+    }
+  }, [shouldFocus]);
 
   const handleKeyDown = async (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -77,20 +95,25 @@ export function EditablePauseCell({
     // Real-time validation
     const validation = validatePauseMinutes(newValue);
     setIsValid(validation.isValid || newValue === '');
+
+    // Call onChange with the string if valid
+    if (onChange && validation.isValid) {
+      onChange(newValue);
+    }
   };
 
   return (
-    <Input
+    <input
+      ref={inputRef}
       type="text"
-      inputMode="numeric"
       value={editValue}
       onChange={handleChange}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
       placeholder="MM oder HH:MM"
-      className={`${className} ${!isValid ? 'border-red-500 focus:border-red-500' : ''}`}
+      className={`${className} ${!isValid ? 'border-red-500 focus:border-red-500' : ''} px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
       aria-label={ariaLabel}
-      autoFocus
+      style={style}
     />
   );
 }
