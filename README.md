@@ -131,3 +131,37 @@ Hinweis: Die Anwendung akkumuliert Zeiten intern sekundengenau (für Genauigkeit
 ## Lizenz
 
 MIT
+## Deployment (Ubuntu + PM2)
+
+Prereqs: Node 20 (nvm), PM2, Nginx reverse proxy.
+
+1) First-time setup
+- `cd /var/www/zeiterfassung1337`
+- `nvm install 20 && nvm use 20 && nvm alias default 20`
+- Create `.env` (see `.env.example`). Recommended absolute DB path:
+  - `DATABASE_URL=file:/var/www/zeiterfassung1337/prod.db`
+  - `NEXTAUTH_SECRET=...` (long random)
+  - `NEXTAUTH_URL=https://mobile-timecard.de`
+- Install, DB, build:
+  - `npm ci --omit=dev`
+  - `npm run db:setup`
+  - `npm run build`
+- Start with PM2:
+  - `pm2 start ecosystem.config.js` (uses cwd + .env)
+  - `pm2 save && pm2 startup`
+
+2) Redeploy/update
+- `cd /var/www/zeiterfassung1337 && git pull`
+- `nvm use 20`
+- `npm ci --omit=dev`
+- `npm run db:setup`
+- `npm run build`
+- `pm2 reload zeiterfassung1337 --update-env`
+
+3) One-shot helper
+- `RESET_DB=true APP_DIR=/var/www/zeiterfassung1337 APP_NAME=zeiterfassung1337 bash scripts/deploy.sh`
+
+4) Reset only DB (destructive)
+- `APP_DIR=/var/www/zeiterfassung1337 bash scripts/reset-db.sh`
+
+Nginx must forward proxy headers: `Host`, `X-Forwarded-For`, `X-Forwarded-Proto`.
