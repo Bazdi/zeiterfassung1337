@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -28,12 +28,12 @@ export function AdminRatesTab({ initialRates }: { initialRates?: AdminRate[] }) 
   const [monthlyHours, setMonthlyHours] = useState<string>("")
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { if (!initialRates) void fetchRates(); else initBindings(initialRates) }, [])
-
-  const fetchRates = async () => {
+  const fetchRates = useCallback(async () => {
     setLoading(true)
     try { const res = await fetch("/api/admin/rates"); if (res.ok) { const data: AdminRate[] = await res.json(); setRates(data); initBindings(data) } } finally { setLoading(false) }
-  }
+  }, [])
+
+  useEffect(() => { if (!initialRates) void fetchRates(); else initBindings(initialRates) }, [initialRates, fetchRates])
 
   const initBindings = (data: AdminRate[]) => {
     const base = data.find(r => r.is_base_rate)

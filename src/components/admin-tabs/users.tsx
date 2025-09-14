@@ -24,7 +24,7 @@ export function AdminUsersTab({ initialUsers }: { initialUsers?: AdminUser[] }) 
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
 
-  useEffect(() => { if (!initialUsers) void fetchUsers() }, [])
+  useEffect(() => { if (!initialUsers) void fetchUsers() }, [initialUsers])
 
   const fetchUsers = async () => {
     setLoading(true)

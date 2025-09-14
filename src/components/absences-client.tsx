@@ -33,7 +33,7 @@ export function AbsencesClient({ initialAbsences }: { initialAbsences?: Absence[
   const [formData, setFormData] = useState({ date: "", type: "SICK" as "SICK" | "VACATION", hours: "", note: "" })
   const Virtuoso = dynamic(() => import('react-virtuoso').then(m => m.Virtuoso), { ssr: false }) as any
 
-  useEffect(() => { if (!initialAbsences) void fetchAbsences() }, [])
+  useEffect(() => { if (!initialAbsences) void fetchAbsences() }, [initialAbsences])
 
   const fetchAbsences = async () => {
     setLoading(true)

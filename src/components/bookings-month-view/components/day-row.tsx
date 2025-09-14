@@ -53,7 +53,7 @@ export const DayRow: React.FC<DayRowProps> = ({
   onUpdateCreateBuffer,
   onShowDetails
 }) => {
-  const dateObj = new Date(`${date}T00:00:00Z`);
+  const dateObj = React.useMemo(() => new Date(`${date}T00:00:00Z`), [date]);
   const isWeekend = dateObj.getUTCDay() === 0 || dateObj.getUTCDay() === 6;
 
   const calculations = useMemo(() => {

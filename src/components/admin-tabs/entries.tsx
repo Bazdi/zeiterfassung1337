@@ -22,7 +22,7 @@ export function AdminEntriesTab({ initialEntries }: { initialEntries?: AdminTime
   const [entryForm, setEntryForm] = useState({ start_utc: "", end_utc: "", category: "REGULAR", note: "", project_tag: "" })
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { if (!initialEntries) void fetchEntries() }, [])
+  useEffect(() => { if (!initialEntries) void fetchEntries() }, [initialEntries])
 
   const fetchEntries = async () => {
     setLoading(true)

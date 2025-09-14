@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,9 +22,7 @@ export function AdminHolidaysTab() {
   const [rangeFrom, setRangeFrom] = useState<number>(new Date().getFullYear())
   const [rangeTo, setRangeTo] = useState<number>(new Date().getFullYear())
 
-  useEffect(() => { void fetchData() }, [year])
-
-  async function fetchData() {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     try {
       const res = await fetch(`/api/admin/holidays`)
@@ -33,7 +31,9 @@ export function AdminHolidaysTab() {
         setHolidays(arr.filter(h => new Date(h.date).getFullYear() === year).sort((a,b)=> a.date < b.date ? -1 : 1))
       }
     } finally { setLoading(false) }
-  }
+  }, [year])
+
+  useEffect(() => { void fetchData() }, [fetchData])
 
   async function createHoliday() {
     if (!createForm.date || !createForm.name) { toast.error("Datum und Name erforderlich"); return }

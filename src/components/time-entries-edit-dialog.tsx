@@ -33,13 +33,27 @@ export function TimeEntryEditDialog({
             <div className="h-1.5 w-10 rounded-full bg-gray-300 mx-auto mb-3" />
             <div className="text-lg font-semibold mb-2">Eintrag bearbeiten</div>
             <div className="space-y-4">
-          <div><Label htmlFor="start_edit">Startzeit</Label><Input id="start_edit" type="datetime-local" step={300} value={form.start_utc} onChange={(e) => setForm({ ...form, start_utc: e.target.value })} /></div>
-          <div><Label htmlFor="end_edit">Endzeit</Label><Input id="end_edit" type="datetime-local" step={300} value={form.end_utc} onChange={(e) => setForm({ ...form, end_utc: e.target.value })} /></div>
-          <div>
-          {/* Kategorie entf‰llt ñ wird automatisch bestimmt */}
-          <div><Label htmlFor="note_edit">Notiz</Label><Textarea id="note_edit" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></div>
-          <div><Label htmlFor="project_edit">Projekt</Label><Input id="project_edit" value={form.project_tag} onChange={(e) => setForm({ ...form, project_tag: e.target.value })} /></div>
-          <div className="flex justify-end gap-2"><Button variant="outline" onClick={() => onOpenChange(false)}>Abbrechen</Button><Button loading={saving} onClick={onSubmit}>Speichern</Button></div>
+              <div>
+                <Label htmlFor="start_edit">Startzeit</Label>
+                <Input id="start_edit" type="datetime-local" step={300} value={form.start_utc} onChange={(e) => setForm({ ...form, start_utc: e.target.value })} />
+              </div>
+              <div>
+                <Label htmlFor="end_edit">Endzeit</Label>
+                <Input id="end_edit" type="datetime-local" step={300} value={form.end_utc} onChange={(e) => setForm({ ...form, end_utc: e.target.value })} />
+              </div>
+              {/* Kategorie entf√§llt - wird automatisch bestimmt */}
+              <div>
+                <Label htmlFor="note_edit">Notiz</Label>
+                <Textarea id="note_edit" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+              </div>
+              <div>
+                <Label htmlFor="project_edit">Projekt</Label>
+                <Input id="project_edit" value={form.project_tag} onChange={(e) => setForm({ ...form, project_tag: e.target.value })} />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => onOpenChange(false)}>Abbrechen</Button>
+                <Button loading={saving} onClick={onSubmit}>Speichern</Button>
+              </div>
             </div>
           </div>
         </Drawer.Content>
