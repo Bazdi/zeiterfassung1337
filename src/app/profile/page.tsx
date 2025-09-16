@@ -7,10 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { UserCircle } from "lucide-react"
-import AppHeader from "@/components/app-header"
 import { AuthGuard } from "@/components/auth-guard"
 import { toast } from "sonner"
-import MobileTabbar from "@/components/mobile-tabbar"
+import { AppShell } from "@/components/app-shell"
 
 export default function Profile() {
   const { data: session } = useSession()
@@ -69,19 +68,21 @@ export default function Profile() {
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <AppHeader title="Profil" />
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-[env(safe-area-inset-bottom)]">
-          <div className="max-w-md mx-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <UserCircle className="h-5 w-5 mr-2" />
-                  Profil verwalten
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
+      <AppShell
+        title="Profil"
+        heading="Profil verwalten"
+        description="Aktualisiere deine Zugangsdaten und installiere die App auf dem Homescreen."
+        contentClassName="pb-24"
+      >
+        <div className="mx-auto w-full max-w-xl">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center text-xl">
+                <UserCircle className="mr-2 h-5 w-5" />
+                Profil verwalten
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
                 {/* App Installation */}
                 <div className="space-y-2">
                   <h3 className="text-lg font-medium">App installieren</h3>
@@ -150,13 +151,10 @@ export default function Profile() {
                     {loading ? "Wird geändert..." : "Passwort ändern"}
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </main>
-        <MobileTabbar />
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AppShell>
     </AuthGuard>
   )
 }
-

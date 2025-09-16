@@ -5,8 +5,7 @@
 "use client";
 
 import React, { useState, useMemo } from 'react';
-import AppHeader from '@/components/app-header';
-import MobileTabbar from '@/components/mobile-tabbar';
+import { AppShell } from '@/components/app-shell';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
@@ -45,13 +44,14 @@ export default function BookingsMonthView({
 
   // State for creating new entries
   const [creatingDay, setCreatingDay] = useState<string | null>(null);
-  const [createBuffer, setCreateBuffer] = useState<CreateEntryBuffer>({
+  const createBufferTemplate: CreateEntryBuffer = {
     start: "08:00",
     end: "16:00",
-    pause: "0",
+    pause: "00:00",
     note: "",
     category: "REGULAR"
-  });
+  };
+  const [createBuffer, setCreateBuffer] = useState<CreateEntryBuffer>({ ...createBufferTemplate });
 
   // State for day details dialog
   const [sheetDay, setSheetDay] = useState<string | null>(null);
@@ -206,25 +206,13 @@ export default function BookingsMonthView({
     const success = await createEntry(payload);
     if (success) {
       setCreatingDay(null);
-      setCreateBuffer({
-        start: "08:00",
-        end: "16:00",
-        pause: "0",
-        note: "",
-        category: "REGULAR"
-      });
+      setCreateBuffer({ ...createBufferTemplate });
     }
   };
 
   const handleStartCreating = (day: string) => {
     setCreatingDay(day);
-    setCreateBuffer({
-      start: "08:00",
-      end: "16:00",
-      pause: "0",
-      note: "",
-      category: "REGULAR"
-    });
+    setCreateBuffer({ ...createBufferTemplate });
   };
 
   const onUpdateCreateBuffer = (updates: Partial<CreateEntryBuffer>) => {
@@ -254,24 +242,27 @@ export default function BookingsMonthView({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <AppHeader title="Monatsansicht" />
+    <AppShell
+      title="Monatsansicht"
+      heading="Monatsübersicht"
+      description="Bearbeite tägliche Zeiten, Pausen und Notizen für den ausgewählten Monat."
+      contentClassName="pb-24"
+      actions={
+        <MonthSelector
+          year={year}
+          month={month}
+          onChange={handleMonthChange}
+        />
+      }
+    >
+      <Card>
+        <CardContent className="pt-4">
+          <div className="overflow-x-auto">
+            <table className="min-w-[1100px] w-full text-sm">
+              <TableHeader />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-[env(safe-area-inset-bottom)]">
-        <Card>
-          <CardContent className="pt-4">
-            <MonthSelector
-              year={year}
-              month={month}
-              onChange={handleMonthChange}
-            />
-
-            <div className="overflow-x-auto">
-              <table className="min-w-[1100px] w-full text-sm">
-                <TableHeader />
-
-                <tbody>
-                  {dayKeys.map(day => {
+              <tbody>
+                {dayKeys.map(day => {
                     const dayEntries = byDay.get(day) || [];
                     const weekKey = getISOWeekNumber(day).year + '-W' + String(getISOWeekNumber(day).week).padStart(2, '0');
                     const isLastOfWeek = weekLastDays.get(weekKey) === day;
@@ -309,39 +300,36 @@ export default function BookingsMonthView({
                       </React.Fragment>
                     );
                   })}
-                </tbody>
+              </tbody>
 
-                <tfoot>
-                  <MonthSummaryRow
-                    totalIst={monthTotals.totalIst}
-                    totalPause={monthTotals.totalPause}
-                    totalSoll={monthTotals.totalSoll}
-                  />
-                </tfoot>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </main>
-
-      <MobileTabbar />
+              <tfoot>
+                <MonthSummaryRow
+                  totalIst={monthTotals.totalIst}
+                  totalPause={monthTotals.totalPause}
+                  totalSoll={monthTotals.totalSoll}
+                />
+              </tfoot>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Day Details Dialog - TODO: Extract to separate component */}
       <Dialog open={!!sheetDay} onOpenChange={(open) => { if (!open) setSheetDay(null) }}>
-        <DialogContent className="bg-white dark:bg-neutral-900 border shadow-lg max-w-2xl">
+        <DialogContent className="max-w-2xl border bg-card text-card-foreground shadow-lg">
           <DialogHeader>
             <DialogTitle>Tag bearbeiten – {sheetDay}</DialogTitle>
           </DialogHeader>
           {sheetDay && (
             <div className="space-y-4">
               {/* Duplicate functionality - TODO: Extract */}
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-muted-foreground">
                 Details für {sheetDay} werden hier angezeigt...
               </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </AppShell>
   );
 }

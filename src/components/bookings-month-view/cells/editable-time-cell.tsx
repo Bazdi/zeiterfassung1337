@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
+import { cn } from '@/lib/utils';
 import { validateTimeString } from '../utils/validation';
 
 interface EditableTimeCellProps {
@@ -106,7 +107,11 @@ export function EditableTimeCell({
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
       placeholder={placeholder}
-      className={`${className} px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${!isValid ? 'border-red-500 focus:border-red-500' : ''}`}
+      className={cn(
+        className,
+        'rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background placeholder:text-muted-foreground',
+        !isValid && 'border-destructive text-destructive focus-visible:ring-destructive'
+      )}
       aria-label={ariaLabel}
       style={style}
     />

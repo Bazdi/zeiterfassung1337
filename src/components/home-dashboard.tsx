@@ -1,14 +1,12 @@
-﻿"use client"
+"use client"
 
 import { useState } from "react"
-import Link from "next/link"
-import { signOut, useSession } from "next-auth/react"
+import { useSession } from "next-auth/react"
 import dynamic from "next/dynamic"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { LogOut, User, Calendar, List, Settings, UserCircle, History, Euro, Info } from "lucide-react"
-import AppHeader from "@/components/app-header"
+import { Calendar, Euro, Info } from "lucide-react"
 import { AuthGuard } from "@/components/auth-guard"
 import { useTimeEntries } from "@/hooks/use-time-entries"
 import { useAllReports } from "@/hooks/use-reports"
@@ -16,7 +14,7 @@ import { useSalary } from "@/hooks/use-salary"
 import { useDailyReport } from "@/hooks/use-daily-report"
 import { formatHours } from "@/lib/utils"
 import { StatsTile } from "@/components/stats-tile"
-import MobileTabbar from "@/components/mobile-tabbar"
+import { AppShell } from "@/components/app-shell"
 
 // Load the clock only on the client to keep the RSC shell lean
 const TimeClock = dynamic(() => import("@/components/time-clock").then(m => m.TimeClock), { ssr: false })
@@ -66,10 +64,12 @@ export function HomeDashboard({
 
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-background">
-        <AppHeader title="Zeiterfassung" />
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16 pb-[env(safe-area-inset-bottom)]">
+      <AppShell
+        title="Zeiterfassung"
+        heading="Arbeitszeitübersicht"
+        description="Live-Zeiterfassung, aktuelle Statistiken und Berichte."
+        contentClassName="pb-24"
+      >
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <TimeClock onTimeEntryChange={invalidateReports} />
@@ -168,7 +168,7 @@ export function HomeDashboard({
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">ÃƒËœ pro Tag:</span>
+                      <span className="text-sm text-muted-foreground">Ø pro Tag:</span>
                       <span className="font-medium">
                         {week.isLoading ? (initialReports?.week ? `${Math.floor((initialReports.week.avgMinutesPerDay||0)/60)}h ${(initialReports.week.avgMinutesPerDay||0)%60}m` : "...") : `${Math.floor((week.data?.avgMinutesPerDay||0)/60)}h ${(week.data?.avgMinutesPerDay||0)%60}m`}
                       </span>
@@ -204,7 +204,7 @@ export function HomeDashboard({
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">ÃƒËœ pro Tag:</span>
+                      <span className="text-sm text-muted-foreground">Ø pro Tag:</span>
                       <span className="font-medium">
                         {month.isLoading ? (initialReports?.month ? `${Math.floor((initialReports.month.avgMinutesPerDay||0)/60)}h ${(initialReports.month.avgMinutesPerDay||0)%60}m` : "...") : `${Math.floor((month.data?.avgMinutesPerDay||0)/60)}h ${(month.data?.avgMinutesPerDay||0)%60}m`}
                       </span>
@@ -214,10 +214,10 @@ export function HomeDashboard({
               </Card>
             </div>
 
-            <div className="mt-12 lg:col-span-3">
-              <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">MonatsÃƒÂ¼bersicht</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <Card className="shadow-lg border-2 min-w-[320px] md:min-w-[360px]">
+            <div className="lg:col-span-3 space-y-8">
+              <h2 className="text-center text-2xl font-semibold text-foreground">Monatsübersicht</h2>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <Card className="border min-w-[320px] md:min-w-[360px]">
                   <CardHeader className="pb-6">
                     <CardTitle className="text-xl text-foreground flex items-center">
                       <Calendar className="h-6 w-6 mr-3" />
@@ -227,31 +227,31 @@ export function HomeDashboard({
                   <CardContent className="pt-6">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">Reguläre Arbeitszeit:</span>
+                        <span className="text-base text-muted-foreground min-w-0 break-words">Reguläre Arbeitszeit:</span>
                         <span className="font-semibold text-lg shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? formatHours(initialSalary.regularWork.hours) : "...") : formatHours(salary?.regularWork.hours)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">Zuschlagsstunden <Info className="h-4 w-4 text-gray-400" /></span>
+                        <span className="text-base text-muted-foreground min-w-0 break-words">Zuschlagsstunden <Info className="h-4 w-4 text-muted-foreground" /></span>
                         <span className="font-semibold text-lg shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? formatHours(initialSalary.surchargeWork.hours) : "...") : formatHours(salary?.surchargeWork.hours)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">Abwesenheitsstunden:</span>
+                        <span className="text-base text-muted-foreground min-w-0 break-words">Abwesenheitsstunden:</span>
                         <span className="font-semibold text-lg shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? formatHours(initialSalary.absences.hours) : "...") : formatHours(salary?.absences.hours)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">Monatszuschlag (Betrag)</span>
+                        <span className="text-base text-muted-foreground min-w-0 break-words">Monatszuschlag (Betrag)</span>
                         <span className="font-semibold text-lg shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? formatHours(initialSalary.monthlyBonus.hours) : "...") : formatHours(salary?.monthlyBonus.hours)}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between gap-3 py-4 border-t bg-muted px-4 rounded">
-                        <span className="text-lg font-bold text-gray-900">Gesamtstunden:</span>
+                      <div className="flex items-center justify-between gap-3 rounded border bg-muted px-4 py-4">
+                        <span className="text-lg font-bold text-foreground">Gesamtstunden:</span>
                         <span className="font-bold text-2xl shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? formatHours(initialSalary.totals.hours) : "...") : formatHours(salary?.totals.hours)}
                         </span>
@@ -260,7 +260,7 @@ export function HomeDashboard({
                   </CardContent>
                 </Card>
 
-                  <Card className="shadow-sm">
+                <Card className="border min-w-[320px] md:min-w-[360px]">
                   <CardHeader className="pb-6">
                     <CardTitle className="text-xl text-foreground flex items-center">
                       <Euro className="h-6 w-6 mr-3" />
@@ -270,38 +270,38 @@ export function HomeDashboard({
                   <CardContent className="pt-6">
                     <div className="space-y-4">
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">RegulÃƒÂ¤re VergÃƒÂ¼tung:</span>
+                        <span className="text-base text-muted-foreground min-w-0 break-words">Reguläre Vergütung:</span>
                         <span className="font-semibold text-lg shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.regularWork.earnings)}` : "...") : `${formatEUR(salary?.regularWork.earnings)}`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">ZuschlagsvergÃƒÂ¼tung:</span>
+                        <span className="text-base text-muted-foreground min-w-0 break-words">Zuschlagsvergütung:</span>
                         <span className="font-semibold text-lg shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.surchargeWork.earnings)}` : "...") : `${formatEUR(salary?.surchargeWork.earnings)}`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">AbwesenheitsvergÃƒÂ¼tung:</span>
+                        <span className="text-base text-muted-foreground min-w-0 break-words">Abwesenheitsvergütung:</span>
                         <span className="font-semibold text-lg shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.absences.earnings)}` : "...") : `${formatEUR(salary?.absences.earnings)}`}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-3 py-2 border-b">
-                        <span className="text-base text-gray-700 min-w-0 break-words">Monatszuschlag (Betrag)</span>
+                        <span className="text-base text-muted-foreground min-w-0 break-words">Monatszuschlag (Betrag)</span>
                         <span className="font-semibold text-lg shrink-0 text-right">
                           {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.monthlyBonus.earnings)}` : "...") : `${formatEUR(salary?.monthlyBonus.earnings)}`}
                         </span>
                       </div>
-                      <div className="flex items-center justify-between gap-3 py-4 border-t bg-muted px-4 rounded">
-                        <span className="text-lg font-bold text-gray-900">Bruttoverdienst:</span>
-                        <span className="font-bold text-2xl shrink-0 text-right">
+                      <div className="flex items-center justify-between gap-3 rounded border bg-muted px-4 py-4">
+                        <span className="text-lg font-semibold text-foreground">Bruttoverdienst:</span>
+                        <span className="shrink-0 text-right text-2xl font-bold">
                           {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.totals.grossEarnings)}` : "...") : `${formatEUR(salary?.totals.grossEarnings)}`}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center py-2 bg-muted px-4 rounded">
-                        <span className="text-base font-medium text-gray-900">Nettoverdienst (70%):</span>
-                        <span className="font-bold text-xl shrink-0 text-right">
+                      <div className="flex items-center justify-between gap-3 rounded border bg-background/60 px-4 py-3">
+                        <span className="text-base font-medium text-foreground">Nettoverdienst (70%):</span>
+                        <span className="shrink-0 text-right text-xl font-semibold">
                           {salaryLoading ? (initialSalary ? `${formatEUR(initialSalary.totals.netEarnings)}` : "...") : `${formatEUR(salary?.totals.netEarnings)}`}
                         </span>
                       </div>
@@ -310,14 +310,14 @@ export function HomeDashboard({
                 </Card>
               </div>
 
-              <div className="mt-8">
-                <h3 className="text-xl font-bold text-foreground mb-4">Zuschlagsdetails</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-4">
+                <h3 className="text-xl font-semibold text-foreground">Zuschlagsdetails</h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                   <Card>
                     <CardContent className="pt-4">
                       <div className="text-center">
-                        <div className="text-sm text-muted-foreground font-medium">Nachtarbeit</div>
-                        <div className="text-lg font-bold">25%</div>
+                        <div className="text-sm font-medium text-muted-foreground">Nachtarbeit</div>
+                        <div className="text-lg font-bold text-foreground">25%</div>
                         <div className="text-xs text-muted-foreground">Mo-Fr ab 21:00</div>
                       </div>
                     </CardContent>
@@ -325,8 +325,8 @@ export function HomeDashboard({
                   <Card>
                     <CardContent className="pt-4">
                       <div className="text-center">
-                        <div className="text-sm text-muted-foreground font-medium">Samstag</div>
-                        <div className="text-lg font-bold">20%</div>
+                        <div className="text-sm font-medium text-muted-foreground">Samstag</div>
+                        <div className="text-lg font-bold text-foreground">20%</div>
                         <div className="text-xs text-muted-foreground">ab 13:00</div>
                       </div>
                     </CardContent>
@@ -334,18 +334,18 @@ export function HomeDashboard({
                   <Card>
                     <CardContent className="pt-4">
                       <div className="text-center">
-                        <div className="text-sm text-purple-700 font-medium">Sonntag</div>
-                        <div className="text-lg font-bold text-purple-800">25%</div>
-                        <div className="text-xs text-purple-600">ganztÃƒÂ¤gig</div>
+                        <div className="text-sm font-medium text-primary">Sonntag</div>
+                        <div className="text-lg font-bold text-primary">25%</div>
+                        <div className="text-xs text-muted-foreground">ganztägig</div>
                       </div>
                     </CardContent>
                   </Card>
                   <Card>
                     <CardContent className="pt-4">
                       <div className="text-center">
-                        <div className="text-sm text-red-700 font-medium">Feiertag</div>
-                        <div className="text-lg font-bold text-red-800">135%</div>
-                        <div className="text-xs text-red-600">NRW-Feiertage</div>
+                        <div className="text-sm font-medium text-destructive">Feiertag</div>
+                        <div className="text-lg font-bold text-destructive">135%</div>
+                        <div className="text-xs text-muted-foreground">NRW-Feiertage</div>
                       </div>
                     </CardContent>
                   </Card>
@@ -444,14 +444,7 @@ export function HomeDashboard({
               </Card>
             </div>
           </div>
-        </main>
-        <MobileTabbar />
-      </div>
+      </AppShell>
     </AuthGuard>
   )
 }
-
-
-
-
-

@@ -9,12 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { Settings, ArrowLeft } from "lucide-react"
-import AppHeader from "@/components/app-header"
-import MobileTabbar from "@/components/mobile-tabbar"
 import { AuthGuard } from "@/components/auth-guard"
 import dynamic from "next/dynamic"
+import { AppShell } from "@/components/app-shell"
 
 export interface AdminUser { id: string; username: string; role: string; active: boolean; created_at: string; last_login_at: string | null }
 export interface AdminTimeEntry { id: string; start_utc: string; end_utc: string | null; duration_minutes: number | null; pause_total_minutes?: number | null; category: string; note: string | null; project_tag: string | null; user: { username: string } }
@@ -133,38 +130,47 @@ export function AdminClient({ initialUsers, initialEntries, initialRates }: { in
 
   if (!session || session.user.role !== "ADMIN") {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="w-full max-w-md"><CardContent className="pt-6">
-          <div className="text-center">
-            <h2 className="text-2xl font-bold text-red-600 mb-4">Zugriff verweigert</h2>
-            <p className="text-gray-600 mb-4">Sie haben keine Berechtigung für den Admin-Bereich.</p>
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Card className="w-full max-w-md">
+          <CardContent className="space-y-4 pt-6 text-center">
+            <h2 className="text-2xl font-semibold text-destructive">Zugriff verweigert</h2>
+            <p className="text-sm text-muted-foreground">
+              Sie haben keine Berechtigung für den Admin-Bereich.
+            </p>
             <Button asChild>
               <Link href="/">Zurück zur Startseite</Link>
             </Button>
-          </div>
-        </CardContent></Card>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-      <div className="min-h-screen bg-gray-50">
-        <AppHeader title="Admin-Bereich" />
-
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16 pb-[env(safe-area-inset-bottom)]">
-          <div className="flex gap-2 mb-6 flex-wrap">
-            <Button className="h-10 px-4 sm:h-8 sm:px-3" variant={activeTab === "users" ? "default" : "outline"} onClick={() => setActiveTab("users")}>Benutzer</Button>
-            <Button className="h-10 px-4 sm:h-8 sm:px-3" variant={activeTab === "entries" ? "default" : "outline"} onClick={() => setActiveTab("entries")}>Einträge</Button>
-            <Button className="h-10 px-4 sm:h-8 sm:px-3" variant={activeTab === "rates" ? "default" : "outline"} onClick={() => setActiveTab("rates")}>Lohnsätze</Button>
-            <Button className="h-10 px-4 sm:h-8 sm:px-3" variant={activeTab === "holidays" ? "default" : "outline"} onClick={() => setActiveTab("holidays")}>Feiertage</Button>
+    <AuthGuard>
+      <AppShell
+        title="Admin"
+        heading="Admin-Bereich"
+        description="Verwalte Benutzer, Zeiteinträge, Lohnsätze und Feiertage."
+        contentClassName="pb-24"
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant={activeTab === "users" ? "default" : "outline"} onClick={() => setActiveTab("users")}>Benutzer</Button>
+            <Button size="sm" variant={activeTab === "entries" ? "default" : "outline"} onClick={() => setActiveTab("entries")}>Einträge</Button>
+            <Button size="sm" variant={activeTab === "rates" ? "default" : "outline"} onClick={() => setActiveTab("rates")}>Lohnsätze</Button>
+            <Button size="sm" variant={activeTab === "holidays" ? "default" : "outline"} onClick={() => setActiveTab("holidays")}>Feiertage</Button>
           </div>
-
-          {activeTab === "users" && <UsersTab initialUsers={initialUsers} />}
-          {activeTab === "entries" && <EntriesTab initialEntries={initialEntries} />}
-          {activeTab === "rates" && <RatesTab initialRates={initialRates} />}
-          {activeTab === "holidays" && <HolidaysTab />}
-        </main>
-        <MobileTabbar />
-      </div>
+        }
+      >
+        <Card>
+          <CardContent className="p-0">
+            {activeTab === "users" && <UsersTab initialUsers={initialUsers} />}
+            {activeTab === "entries" && <EntriesTab initialEntries={initialEntries} />}
+            {activeTab === "rates" && <RatesTab initialRates={initialRates} />}
+            {activeTab === "holidays" && <HolidaysTab />}
+          </CardContent>
+        </Card>
+      </AppShell>
+    </AuthGuard>
   )
 }

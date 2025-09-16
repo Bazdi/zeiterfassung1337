@@ -21,7 +21,7 @@ export function MonthSelector({
   year,
   month,
   onChange,
-  className = 'flex items-center gap-3 mb-3'
+  className = 'flex flex-wrap items-center justify-between gap-3'
 }: MonthSelectorProps) {
   const currentYear = new Date().getFullYear();
 
@@ -48,10 +48,10 @@ export function MonthSelector({
         value={`${year}-${String(month).padStart(2, '0')}`}
         onValueChange={handleValueChange}
       >
-        <SelectTrigger className="w-[200px]" aria-label="Monat und Jahr auswählen">
+        <SelectTrigger className="w-[220px]" aria-label="Monat und Jahr auswählen">
           <SelectValue />
         </SelectTrigger>
-        <SelectContent className="bg-white border shadow-lg z-50">
+        <SelectContent className="z-50 border border-border bg-popover text-popover-foreground shadow-lg">
           {options.map(option => (
             <SelectItem key={option.value} value={option.value}>
               {option.label}

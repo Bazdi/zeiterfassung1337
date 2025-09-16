@@ -49,3 +49,23 @@ export function formatTime(date: Date): string {
     hourCycle: 'h23'
   })
 }
+
+const misencodedPattern = /Ã.|Â./
+const utf8Decoder = typeof TextDecoder !== "undefined" ? new TextDecoder("utf-8") : null
+
+export function normalizeEncoding(value?: string | null): string {
+  if (!value) return ""
+  if (!misencodedPattern.test(value)) return value
+  if (!utf8Decoder) return value
+
+  const bytes = new Uint8Array(value.length)
+  for (let i = 0; i < value.length; i += 1) {
+    bytes[i] = value.charCodeAt(i)
+  }
+
+  try {
+    return utf8Decoder.decode(bytes)
+  } catch {
+    return value
+  }
+}

@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 import { TimeEntryCategory } from '../types';
 import { validateNote, validateCategory, sanitizeTextInput } from '../utils/validation';
 import { vibrate } from '../utils/time-helpers';
@@ -24,7 +25,7 @@ export function NotesCell({
   isCreating = false,
   onCreateSave,
   onCreateCancel,
-  className = 'text-gray-700 max-w-[360px]'
+  className = 'max-w-[360px] text-sm text-foreground'
 }: NotesCellProps) {
   const [createNote, setCreateNote] = useState('');
   const [createCategory, setCreateCategory] = useState<TimeEntryCategory>('REGULAR');
@@ -75,16 +76,16 @@ export function NotesCell({
 
   if (isCreating) {
     return (
-      <div className="flex flex-col gap-2">
-        <div className="w-[180px]">
+      <div className="flex flex-col gap-2 text-sm text-foreground">
+        <div className="w-[200px]">
           <Select
             value={createCategory}
             onValueChange={(value: TimeEntryCategory) => setCreateCategory(value)}
           >
-            <SelectTrigger className={!isValid ? 'border-red-500' : ''}>
+            <SelectTrigger className={cn(!isValid && 'border-destructive focus-visible:ring-destructive')}>
               <SelectValue placeholder="Kategorie" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="border border-border bg-popover text-popover-foreground shadow-lg">
               <SelectItem value="REGULAR">Arbeitszeit</SelectItem>
               <SelectItem value="VACATION">Urlaub</SelectItem>
               <SelectItem value="SICKNESS">Krank</SelectItem>
@@ -99,7 +100,7 @@ export function NotesCell({
           value={createNote}
           onChange={(e) => setCreateNote(e.target.value)}
           onKeyDown={handleKeyDown}
-          className={!isValid ? 'border-red-500' : ''}
+          className={cn(!isValid && 'border-destructive focus-visible:ring-destructive')}
           autoFocus
         />
       </div>
@@ -113,12 +114,12 @@ export function NotesCell({
   return (
     <div className={className}>
       {displayCategory && (
-        <div className="text-xs text-gray-500 mb-1">
+        <div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
           {displayCategory}
         </div>
       )}
       <div
-        className="truncate"
+        className="truncate text-sm text-muted-foreground"
         title={combinedNotes}
       >
         {combinedNotes}

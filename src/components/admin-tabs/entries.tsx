@@ -1,6 +1,6 @@
-﻿"use client"
+"use client"
 
-import { useEffect, useState } from "react"
+import { memo, useCallback, useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -15,6 +15,65 @@ import { formatDateTime as formatDateTimeUtil } from "@/lib/utils"
 
 export interface AdminTimeEntry { id: string; start_utc: string; end_utc: string | null; duration_minutes: number | null; pause_total_minutes?: number | null; category: string; note: string | null; project_tag: string | null; user: { username: string } }
 
+function EntryRow({
+  entry,
+  onEdit,
+  onDelete,
+  formatDateTime,
+  formatDuration
+}: {
+  entry: AdminTimeEntry
+  onEdit: (entry: AdminTimeEntry) => void
+  onDelete: (entry: AdminTimeEntry) => void
+  formatDateTime: (value: string) => string
+  formatDuration: (minutes: number | null) => string
+}) {
+  const handleEdit = useCallback(() => {
+    onEdit(entry)
+  }, [onEdit, entry])
+
+  const handleDelete = useCallback(() => {
+    onDelete(entry)
+  }, [onDelete, entry])
+
+  return (
+    <Card className="border-border">
+      <CardContent className="flex flex-col gap-3 pt-6">
+        <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{formatDateTime(entry.start_utc)}</span>
+          <span className="text-muted-foreground">&ndash;</span>
+          <span className="font-medium text-foreground">{entry.end_utc ? formatDateTime(entry.end_utc) : "Läuft"}</span>
+          <Badge variant="secondary">{entry.category}</Badge>
+          <span className="text-muted-foreground">{entry.user.username}</span>
+        </div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-xs text-muted-foreground">Dauer: {formatDuration(entry.duration_minutes)}</div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleEdit}
+              aria-label="Zeiteintrag bearbeiten"
+            >
+              <Edit className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="destructive"
+              size="icon"
+              onClick={handleDelete}
+              aria-label="Zeiteintrag löschen"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+const MemoEntryRow = memo(EntryRow)
+
 export function AdminEntriesTab({ initialEntries }: { initialEntries?: AdminTimeEntry[] }) {
   const [entries, setEntries] = useState<AdminTimeEntry[]>(initialEntries ?? [])
   const [loading, setLoading] = useState(!initialEntries)
@@ -22,53 +81,70 @@ export function AdminEntriesTab({ initialEntries }: { initialEntries?: AdminTime
   const [entryForm, setEntryForm] = useState({ start_utc: "", end_utc: "", category: "REGULAR", note: "", project_tag: "" })
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => { if (!initialEntries) void fetchEntries() }, [initialEntries])
-
-  const fetchEntries = async () => {
+  const fetchEntries = useCallback(async () => {
     setLoading(true)
     try { const res = await fetch("/api/admin/time-entries"); if (res.ok) setEntries(await res.json()) } finally { setLoading(false) }
-  }
+  }, [])
 
-  const openEdit = (e: AdminTimeEntry) => {
+  useEffect(() => { if (!initialEntries) void fetchEntries(); else setEntries(initialEntries) }, [initialEntries, fetchEntries])
+
+  const openEdit = useCallback((e: AdminTimeEntry) => {
     setEditingEntry(e)
     setEntryForm({ start_utc: e.start_utc ? e.start_utc.slice(0,16) : "", end_utc: e.end_utc ? e.end_utc.slice(0,16) : "", category: e.category, note: e.note || "", project_tag: e.project_tag || "" })
-  }
-  const saveEntry = async () => {
+  }, [])
+
+  const saveEntry = useCallback(async () => {
     if (!editingEntry) return; setSaving(true)
     try { const res = await fetch(`/api/time-entries/${editingEntry.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entryForm) }); if (res.ok) { setEditingEntry(null); fetchEntries(); toast.success("Eintrag gespeichert") } else { toast.error("Fehler beim Speichern") } } finally { setSaving(false) }
-  }
-  const deleteEntry = async (id: string) => { if (!confirm('Eintrag wirklich löschen?')) return; try { const res = await fetch(`/api/time-entries/${id}`, { method: 'DELETE' }); if (res.ok) { fetchEntries(); toast.success("Eintrag gelöscht") } else { toast.error("Fehler beim Löschen") } } catch { toast.error("Fehler beim Löschen") } }
+  }, [editingEntry, entryForm, fetchEntries])
 
-  const formatDateTime = (dateString: string) => formatDateTimeUtil(new Date(dateString))
-  const formatDuration = (minutes: number | null) => { if (!minutes) return "-"; const h = Math.floor(minutes/60); const m = minutes%60; return `${h}h ${m}m` }
+  const deleteEntry = useCallback(async (id: string) => {
+    if (!confirm('Eintrag wirklich löschen?')) return
+    try {
+      const res = await fetch(`/api/time-entries/${id}`, { method: 'DELETE' })
+      if (res.ok) { fetchEntries(); toast.success("Eintrag gelöscht") } else { toast.error("Fehler beim Löschen") }
+    } catch { toast.error("Fehler beim Löschen") }
+  }, [fetchEntries])
+
+  const formatDateTime = useCallback((dateString: string) => formatDateTimeUtil(new Date(dateString)), [])
+  const formatDuration = useCallback((minutes: number | null) => { if (!minutes) return "-"; const h = Math.floor(minutes/60); const m = minutes%60; return `${h}h ${m}m` }, [])
+
+  const handleDeleteEntry = useCallback((entry: AdminTimeEntry) => {
+    void deleteEntry(entry.id)
+  }, [deleteEntry])
+
+  const entryRows = useMemo(() => (
+    entries.map((entry) => (
+      <MemoEntryRow
+        key={entry.id}
+        entry={entry}
+        onEdit={openEdit}
+        onDelete={handleDeleteEntry}
+        formatDateTime={formatDateTime}
+        formatDuration={formatDuration}
+      />
+    ))
+  ), [entries, openEdit, handleDeleteEntry, formatDateTime, formatDuration])
 
   return (
-    <div>
+    <section className="space-y-6">
+      <header>
+        <h3 className="text-lg font-semibold text-foreground">Zeiteinträge verwalten</h3>
+        <p className="text-sm text-muted-foreground">Ändere erfasste Zeiten oder entferne fehlerhafte Buchungen.</p>
+      </header>
+
       {loading ? (
-        <div className="text-center py-8">Lade Einträge...</div>
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">Lade Einträge...</CardContent>
+        </Card>
       ) : (
         <div className="space-y-4">
-          {entries.map((entry) => (
-            <Card key={entry.id}><CardContent className="pt-6">
-              <div className="flex justify-between items-start">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-4">
-                    <span className="font-medium">{formatDateTime(entry.start_utc)}</span>
-                    <span className="text-gray-500">&ndash;</span>
-                    <span className="font-medium">{entry.end_utc ? formatDateTime(entry.end_utc) : "Läuft"}</span>
-                    <Badge variant="outline">{entry.category}</Badge>
-                    <span className="text-sm text-blue-600">{entry.user.username}</span>
-                  </div>
-                  <div className="text-sm text-gray-600">Dauer: {formatDuration(entry.duration_minutes)}</div>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={() => openEdit(entry)}><Edit className="h-4 w-4"/></Button>
-                  <Button variant="destructive" size="sm" onClick={() => deleteEntry(entry.id)}><Trash2 className="h-4 w-4"/></Button>
-                </div>
-              </div>
-            </CardContent></Card>
-          ))}
-          {entries.length === 0 && (<div className="text-center py-8 text-gray-500">Keine Einträge gefunden.</div>)}
+          {entryRows}
+          {entries.length === 0 && (
+            <Card>
+              <CardContent className="py-10 text-center text-muted-foreground">Keine Einträge gefunden.</CardContent>
+            </Card>
+          )}
         </div>
       )}
 
@@ -93,6 +169,6 @@ export function AdminEntriesTab({ initialEntries }: { initialEntries?: AdminTime
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </section>
   )
 }

@@ -8,17 +8,17 @@ interface TableHeaderProps {
   className?: string;
 }
 
-export function TableHeader({ className = 'text-left text-gray-600 border-b' }: TableHeaderProps) {
+export function TableHeader({ className = 'text-left text-muted-foreground border-b border-border bg-muted/40' }: TableHeaderProps) {
   return (
     <thead>
       <tr className={className}>
-        <th className="py-2 px-2" scope="col">Tag</th>
-        <th className="py-2 px-2" scope="col">Von</th>
-        <th className="py-2 px-2" scope="col">Bis</th>
-        <th className="py-2 px-2" scope="col">IST</th>
-        <th className="py-2 px-2" scope="col">Pause</th>
-        <th className="py-2 px-2" scope="col">SOLL</th>
-        <th className="py-2 px-2" scope="col">DIFF</th>
+        <th className="py-2 px-2 font-semibold" scope="col">Tag</th>
+        <th className="py-2 px-2 font-semibold" scope="col">Von</th>
+        <th className="py-2 px-2 font-semibold" scope="col">Bis</th>
+        <th className="py-2 px-2 font-semibold" scope="col">IST</th>
+        <th className="py-2 px-2 font-semibold" scope="col">Pause</th>
+        <th className="py-2 px-2 font-semibold" scope="col">SOLL</th>
+        <th className="py-2 px-2 font-semibold" scope="col">DIFF</th>
       </tr>
     </thead>
   );

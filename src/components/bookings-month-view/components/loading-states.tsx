@@ -17,33 +17,33 @@ export function TableSkeleton({ rows = 10, className = '' }: TableSkeletonProps)
       {/* Header skeleton */}
       <div className="flex gap-2">
         {Array.from({ length: 9 }, (_, i) => (
-          <div key={i} className="h-8 flex-1 bg-gray-200 rounded animate-pulse" />
+          <div key={i} className="h-8 flex-1 animate-pulse rounded bg-muted" />
         ))}
       </div>
 
       {/* Row skeletons */}
       {Array.from({ length: rows }, (_, rowIndex) => (
         <div key={rowIndex} className="flex gap-2">
-          <div className="h-12 flex-1 bg-gray-200 rounded animate-pulse" />
-          <div className="h-12 w-20 bg-gray-200 rounded animate-pulse" />
-          <div className="h-12 w-20 bg-gray-200 rounded animate-pulse" />
-          <div className="h-12 w-16 bg-gray-200 rounded animate-pulse" />
-          <div className="h-12 w-16 bg-gray-200 rounded animate-pulse" />
-          <div className="h-12 w-16 bg-gray-200 rounded animate-pulse" />
-          <div className="h-12 w-16 bg-gray-200 rounded animate-pulse" />
-          <div className="h-12 w-32 bg-gray-200 rounded animate-pulse" />
-          <div className="h-12 w-24 bg-gray-200 rounded animate-pulse" />
+          <div className="h-12 flex-1 animate-pulse rounded bg-muted" />
+          <div className="h-12 w-20 animate-pulse rounded bg-muted" />
+          <div className="h-12 w-20 animate-pulse rounded bg-muted" />
+          <div className="h-12 w-16 animate-pulse rounded bg-muted" />
+          <div className="h-12 w-16 animate-pulse rounded bg-muted" />
+          <div className="h-12 w-16 animate-pulse rounded bg-muted" />
+          <div className="h-12 w-16 animate-pulse rounded bg-muted" />
+          <div className="h-12 w-32 animate-pulse rounded bg-muted" />
+          <div className="h-12 w-24 animate-pulse rounded bg-muted" />
         </div>
       ))}
 
       {/* Footer skeleton */}
-      <div className="flex gap-2 border-t pt-3">
-        <div className="h-10 flex-1 bg-gray-200 rounded animate-pulse" />
-        <div className="h-10 w-16 bg-gray-200 rounded animate-pulse" />
-        <div className="h-10 w-16 bg-gray-200 rounded animate-pulse" />
-        <div className="h-10 w-16 bg-gray-200 rounded animate-pulse" />
-        <div className="h-10 w-16 bg-gray-200 rounded animate-pulse" />
-        <div className="h-10 w-32 bg-gray-200 rounded animate-pulse" />
+      <div className="flex gap-2 border-t border-border pt-3">
+        <div className="h-10 flex-1 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-16 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-16 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-16 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-16 animate-pulse rounded bg-muted" />
+        <div className="h-10 w-32 animate-pulse rounded bg-muted" />
       </div>
     </div>
   );
@@ -56,7 +56,7 @@ interface MonthSelectorSkeletonProps {
 export function MonthSelectorSkeleton({ className = '' }: MonthSelectorSkeletonProps) {
   return (
     <div className={`flex items-center gap-3 mb-3 ${className}`}>
-      <div className="h-10 w-40 bg-gray-200 rounded animate-pulse" />
+      <div className="h-10 w-40 animate-pulse rounded bg-muted" />
     </div>
   );
 }
@@ -71,13 +71,13 @@ export function FullPageLoading({
   className = ''
 }: FullPageLoadingProps) {
   return (
-    <div className={`min-h-screen bg-gray-50 flex items-center justify-center ${className}`}>
+    <div className={`flex min-h-screen items-center justify-center bg-background ${className}`}>
       <Card className="w-full max-w-md">
         <CardContent className="flex flex-col items-center justify-center p-8">
           <div className="relative">
-            <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin"></div>
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-muted border-t-primary"></div>
           </div>
-          <p className="mt-4 text-gray-600 text-center">{message}</p>
+          <p className="mt-4 text-center text-sm text-muted-foreground">{message}</p>
         </CardContent>
       </Card>
     </div>
@@ -101,7 +101,7 @@ export function InlineLoading({
 
   return (
     <div className={`inline-flex items-center justify-center ${className}`}>
-      <div className={`${sizeClasses[size]} border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin`}></div>
+      <div className={`${sizeClasses[size]} animate-spin rounded-full border-2 border-muted border-t-primary`}></div>
     </div>
   );
 }
@@ -121,10 +121,10 @@ export function LoadingOverlay({
     <div className="relative">
       {children}
       {isVisible && (
-        <div className="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 rounded">
+        <div className="absolute inset-0 z-10 flex items-center justify-center rounded bg-background/80">
           <div className="flex flex-col items-center gap-2">
             <InlineLoading />
-            <span className="text-sm text-gray-600">{message}</span>
+            <span className="text-sm text-muted-foreground">{message}</span>
           </div>
         </div>
       )}
