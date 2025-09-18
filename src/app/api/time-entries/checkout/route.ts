@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     })
     const pausedMs = (fresh?.pause_total_minutes || 0) * 60_000 + (fresh?.pause_started_utc ? Math.max(0, endTime.getTime() - fresh.pause_started_utc.getTime()) : 0)
     const rawMs = Math.max(0, endTime.getTime() - (fresh?.start_utc || openEntry.start_utc).getTime())
-    const netMinutes = Math.floor(Math.max(0, rawMs - pausedMs) / 60_000)
+    const netMinutes = Math.round(Math.max(0, rawMs - pausedMs) / 60_000)
 
     // Update time entry + audit trail atomically
     const updatedEntry = await db.$transaction(async (tx) => {
