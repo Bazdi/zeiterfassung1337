@@ -288,13 +288,14 @@ const DayRowComponent: React.FC<DayRowProps> = ({
 
         {/* IST Column */}
         <td className="py-2 px-2 text-sm font-medium text-foreground">
-          {isEditing(date, 'duration') ? (
+          {isEditing(date, 'duration') || entries.length === 0 ? (
             <EditableTimeCell
               className="h-10 w-[120px]"
               value={formatMinutesToHM(calculations.totalMinutes)}
               onSave={handleDurationSave}
               onCancel={onStopEditing}
               aria-label="Dauer bearbeiten"
+              placeholder="00:00"
             />
           ) : (
             <button

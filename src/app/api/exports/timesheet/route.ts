@@ -34,12 +34,9 @@ export async function POST(request: NextRequest) {
 
     const tz = 'Europe/Berlin'
     const pad = (n: number) => String(n).padStart(2, '0')
-    const daysInMonth = new Date(year, month, 0).getDate()
-    // Fetch with margin to safely cover TZ boundaries, then group by Berlin local date
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate()
     const monthStart = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0))
-    const monthEnd = new Date(Date.UTC(year, month - 1, daysInMonth, 23, 59, 59, 999))
-    const fromWithMargin = new Date(monthStart.getTime() - 24 * 3600 * 1000)
-    const toWithMargin = new Date(monthEnd.getTime() + 24 * 3600 * 1000)
+    const monthEnd = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999))
 
     const fmtKey = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' })
     const fmtDate = new Intl.DateTimeFormat('de-DE', { timeZone: tz, year: '2-digit', month: '2-digit', day: '2-digit' })
