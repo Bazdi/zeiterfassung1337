@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       db.timeEntry.findMany({
         where: {
           user_id: userId,
-          start_utc: { gte: fromWithMargin, lte: toWithMargin },
+          start_utc: { gte: monthStart, lte: monthEnd },
           duration_minutes: { not: null },
         },
         orderBy: { start_utc: 'asc' },
@@ -92,16 +92,17 @@ export async function POST(request: NextRequest) {
     ws.columns = [
       { header: "Tag", key: "weekday", width: 12 },
       { header: "Datum", key: "date", width: 12 },
-      { header: "Arbeitsbe", key: "start", width: 11 },
-      { header: "Arbeitsze", key: "end", width: 11 },
-      { header: "Tatsächlich", key: "pause", width: 10 },
+      { header: "Arbeitsbeginn", key: "start", width: 11 },
+      { header: "Arbeitsende", key: "end", width: 11 },
+      { header: "Pause", key: "pause", width: 10 },
       { header: "Prozente", key: "pct", width: 10 },
       { header: "Stunden", key: "hours", width: 10 },
       { header: "Arbeitszeit", key: "work", width: 12 },
       { header: "Gehalt", key: "pay", width: 12 },
       { header: "Gerundet", key: "rounded", width: 10 },
       { header: "Gehalt gerundet", key: "pay_r", width: 15 },
-    ]
+    ];
+    ws.getRow(7).values = ["Tag", "Datum", "Arbeitsbeginn", "Arbeitsende", "Pause", "Prozente", "Stunden", "Arbeitszeit", "Gehalt", "Gerundet", "Gehalt gerundet"];
 
     const baseHourly = baseRate?.hourly_rate || 0
     const bonusHours = monthlyBonus?.fixed_hours || 0
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
     // Header row for table (row 8)
     const headerRow = ws.getRow(8)
     headerRow.values = [
-      'Tag','Datum','Arbeitsbe','Arbeitsze','Tatsächlich','Prozente','Stunden','Arbeitszeit','Gehalt','Gerundet','Gehalt gerundet'
+      'Tag','Datum','Arbeitsbeginn','Arbeitsende','Pause','Prozente','Stunden','Arbeitszeit','Gehalt','Gerundet','Gehalt gerundet'
     ]
     headerRow.height = 20
     headerRow.eachCell(c => { c.font = { bold: true }; c.alignment = { vertical: 'middle', horizontal: 'center' }; c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } }; c.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} } })
@@ -174,14 +175,26 @@ export async function POST(request: NextRequest) {
       if (endDate) { r.getCell(4).value = fmtTime.format(endDate) }
       r.getCell(5).value = pause / 1440; r.getCell(5).numFmt = 'hh:mm'
       r.getCell(6).value = pct ? (parseFloat(pct)/100) : null; if (pct) r.getCell(6).numFmt = '0.00%'
-      // Formulas
-      const rowIdx = 8 + d
-      const g = `G${rowIdx}`; const c = `C${rowIdx}`; const dcol = `D${rowIdx}`; const e = `E${rowIdx}`; const j = `J${rowIdx}`
-      ws.getCell(g).value = { formula: `IF(AND(${c}<>"",${dcol}<>""),${dcol}-${c}-${e},0)` }; ws.getCell(g).numFmt = 'hh:mm'
-      ws.getCell(`H${rowIdx}`).value = { formula: g }; ws.getCell(`H${rowIdx}`).numFmt = 'hh:mm'
-      ws.getCell(`I${rowIdx}`).value = { formula: `${g}*24*${baseHourly}` }; ws.getCell(`I${rowIdx}`).numFmt = '€ #,##0.00'
-      ws.getCell(j).value = { formula: `ROUND(${g}*24*4,0)/4/24` }; ws.getCell(j).numFmt = 'hh:mm'
-      ws.getCell(`K${rowIdx}`).value = { formula: `${j}*24*${baseHourly}` }; ws.getCell(`K${rowIdx}`).numFmt = '€ #,##0.00'
+
+      const tatsachlicheArbeitszeit = (endDate && startDate) ? (endDate.getTime() - startDate.getTime()) / (1000 * 60) - pause : 0;
+      const stunden = tatsachlicheArbeitszeit * (parseFloat(pct) / 100);
+      let arbeitszeit = tatsachlicheArbeitszeit;
+      if (endDate && endDate.getUTCHours() >= 21) {
+        arbeitszeit += (Math.max(21, endDate.getUTCHours()) - 21) * 60 / 4;
+      }
+      if (endDate && date.getDay() === 6 && endDate.getUTCHours() >= 13) {
+        arbeitszeit += (Math.max(13, endDate.getUTCHours()) - 13) * 60 / 5;
+      }
+      const gehalt = arbeitszeit / 60 * baseHourly;
+      const gerundet = Math.floor(arbeitszeit);
+      const gehaltGerundet = gerundet / 60 * baseHourly;
+
+      r.getCell(7).value = stunden / 60 / 24; r.getCell(7).numFmt = 'hh:mm'
+      r.getCell(8).value = arbeitszeit / 60 / 24; r.getCell(8).numFmt = 'hh:mm'
+      r.getCell(9).value = gehalt; r.getCell(9).numFmt = '€ #,##0.00'
+      r.getCell(10).value = gerundet / 60 / 24; r.getCell(10).numFmt = 'hh:mm'
+      r.getCell(11).value = gehaltGerundet; r.getCell(11).numFmt = '€ #,##0.00'
+
       // Weekend shading across the row (light gray)
       if (date.getDay() === 0 || date.getDay() === 6) {
         for (let col = 1; col <= 11; col++) {
@@ -202,18 +215,18 @@ export async function POST(request: NextRequest) {
     const sumRowIdx = 8 + daysInMonth + 1
     const sumRow = ws.getRow(sumRowIdx)
     sumRow.getCell(1).value = 'Summen:'
-    sumRow.getCell(5).value = { formula: `SUM(E9:E${8+daysInMonth})` }; sumRow.getCell(5).numFmt = 'hh:mm'
-    sumRow.getCell(8).value = { formula: `SUM(H9:H${8+daysInMonth})` }; sumRow.getCell(8).numFmt = 'hh:mm'
-    sumRow.getCell(10).value = (bonusHours*60) / 1440; sumRow.getCell(10).numFmt = 'hh:mm'
+    ws.getCell(`E${sumRowIdx}`).value = { formula: `SUM(E9:E${8+daysInMonth})` }; ws.getCell(`E${sumRowIdx}`).numFmt = 'hh:mm'
+    ws.getCell(`H${sumRowIdx}`).value = { formula: `SUM(H9:H${8+daysInMonth})` }; ws.getCell(`H${sumRowIdx}`).numFmt = 'hh:mm'
+    ws.getCell(`J${sumRowIdx}`).value = { formula: `SUM(J9:J${8+daysInMonth})` }; ws.getCell(`J${sumRowIdx}`).numFmt = 'hh:mm'
     ;[1,5,8,10].forEach(i => sumRow.getCell(i).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFF59D' } })
     sumRow.eachCell(c => { c.border = { top:{style:'thin'}, left:{style:'thin'}, bottom:{style:'thin'}, right:{style:'thin'} } })
     sumRow.commit()
 
     const amountRow = ws.getRow(sumRowIdx + 1)
     amountRow.getCell(1).value = 'Betrag:'
-    amountRow.getCell(2).value = { formula: `SUM(I9:I${8+daysInMonth})` }; amountRow.getCell(2).numFmt = '€ #,##0.00'
+    ws.getCell(`B${sumRowIdx + 1}`).value = { formula: `SUM(I9:I${8+daysInMonth})` }; ws.getCell(`B${sumRowIdx + 1}`).numFmt = '€ #,##0.00'
     amountRow.getCell(5).value = 'Ausbezahlt:'
-    amountRow.getCell(6).value = { formula: `B${sumRowIdx+1}+${bonusAmount||0}` }; amountRow.getCell(6).numFmt = '€ #,##0.00'
+    ws.getCell(`F${sumRowIdx + 1}`).value = { formula: `B${sumRowIdx+1}+${bonusAmount||0}` }; ws.getCell(`F${sumRowIdx + 1}`).numFmt = '€ #,##0.00'
     amountRow.commit()
 
     // Absence block
