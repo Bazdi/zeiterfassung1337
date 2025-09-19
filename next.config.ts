@@ -40,4 +40,11 @@ try {
   withBundleAnalyzer = ba({ enabled: process.env.ANALYZE === "true" });
 } catch {}
 
-export default withBundleAnalyzer(config);
+const withPWA = require("next-pwa")({
+  dest: "public",
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === "development",
+});
+
+export default withPWA(withBundleAnalyzer(config));

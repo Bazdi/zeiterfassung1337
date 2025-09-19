@@ -2,7 +2,7 @@
  * Day row component for displaying and editing a single day's time entries
  */
 
-import React, { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo, useCallback, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { TimeEntry, CreateEntryBuffer, TimeEntryCategory } from '../types';
 import { EditableTimeCell } from '../cells/editable-time-cell';
@@ -26,14 +26,17 @@ interface DayRowProps {
   onSaveTime: (day: string, field: 'start' | 'end', value: string) => Promise<void>;
   onSavePause: (day: string, value: number) => Promise<void>;
   onSaveDuration: (day: string, value: string) => Promise<void>;
-  isCreating: boolean;
-  createBuffer: CreateEntryBuffer;
-  onStartCreating: (day: string) => void;
   onCreateSave: (day: string, buffer: CreateEntryBuffer) => Promise<void>;
-  onCreateCancel: () => void;
-  onUpdateCreateBuffer: (updates: Partial<CreateEntryBuffer>) => void;
   onShowDetails: (day: string) => void;
 }
+
+const createBufferTemplate: CreateEntryBuffer = {
+  start: "08:00",
+  end: "16:00",
+  pause: "00:00",
+  note: "",
+  category: "REGULAR"
+};
 
 const DayRowComponent: React.FC<DayRowProps> = ({
   date,
@@ -45,14 +48,12 @@ const DayRowComponent: React.FC<DayRowProps> = ({
   onSaveTime,
   onSavePause,
   onSaveDuration,
-  isCreating,
-  createBuffer,
-  onStartCreating,
   onCreateSave,
-  onCreateCancel,
-  onUpdateCreateBuffer,
   onShowDetails
 }) => {
+  const [isCreating, setIsCreating] = useState(false);
+  const [createBuffer, setCreateBuffer] = useState<CreateEntryBuffer>({ ...createBufferTemplate });
+
   const dateObj = React.useMemo(() => new Date(`${date}T00:00:00Z`), [date]);
   const isWeekend = dateObj.getUTCDay() === 0 || dateObj.getUTCDay() === 6;
 
@@ -106,7 +107,22 @@ const DayRowComponent: React.FC<DayRowProps> = ({
   const handleCreateSave = useCallback(async (data: { note: string; category: TimeEntryCategory }) => {
     const buffer = { ...createBuffer, ...data };
     await onCreateSave(date, buffer);
+    setIsCreating(false);
+    setCreateBuffer({ ...createBufferTemplate });
   }, [createBuffer, date, onCreateSave]);
+
+  const onUpdateCreateBuffer = (updates: Partial<CreateEntryBuffer>) => {
+    setCreateBuffer(prev => ({ ...prev, ...updates }));
+  };
+
+  const onCreateCancel = () => {
+    setIsCreating(false);
+    setCreateBuffer({ ...createBufferTemplate });
+  }
+
+  const onStartCreating = () => {
+    setIsCreating(true);
+  }
 
   const interactiveCellClasses = "flex h-10 w-full items-center justify-start rounded-md px-3 text-sm font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
   const placeholderButtonClasses = "absolute inset-0 flex h-full w-full items-center justify-center rounded-md border border-dashed border-muted-foreground/40 bg-transparent text-sm font-medium text-muted-foreground transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -211,7 +227,7 @@ const DayRowComponent: React.FC<DayRowProps> = ({
                   isCreating ? 'pointer-events-none opacity-0' : 'pointer-events-auto opacity-100'
                 )}
                 onClick={() => {
-                  onStartCreating(date);
+                  onStartCreating();
                   vibrate(8);
                 }}
                 aria-label="Neuen Eintrag erstellen"
@@ -275,7 +291,7 @@ const DayRowComponent: React.FC<DayRowProps> = ({
                   isCreating ? 'pointer-events-none opacity-0' : 'pointer-events-auto opacity-100'
                 )}
                 onClick={() => {
-                  onStartCreating(date);
+                  onStartCreating();
                   vibrate(8);
                 }}
                 aria-label="Neuen Eintrag erstellen"
@@ -359,7 +375,7 @@ const DayRowComponent: React.FC<DayRowProps> = ({
                   isCreating ? 'pointer-events-none opacity-0' : 'pointer-events-auto opacity-100'
                 )}
                 onClick={() => {
-                  onStartCreating(date);
+                  onStartCreating();
                   vibrate(8);
                 }}
                 aria-label="Neuen Eintrag erstellen"
