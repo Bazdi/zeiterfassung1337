@@ -8,7 +8,7 @@
   "scripts": {
     "assets:icons": "tsx scripts/generate-icons.ts",
     "prebuild": "npm run assets:icons",
-    "dev": "nodemon --exec \"npx tsx server.ts\" --watch server.ts --watch src --ext ts,tsx,js,jsx",
+    "dev": "nodemon --ignore jules-scratch/ --exec \"npx tsx server.ts\" --ext ts,tsx,js,jsx",
     "build": "next build",
     "start": "sh -c 'next start -p ${PORT:-3000}'",
     "lint": "next lint",
