@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import ExcelJS from "exceljs"
 import fs from "fs"
 import path from "path"
 export const runtime = "nodejs"
@@ -15,6 +14,7 @@ function formatHM(totalMinutes: number): string {
 
 export async function POST(request: NextRequest) {
   try {
+    const ExcelJS = (await import("exceljs")).default
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })

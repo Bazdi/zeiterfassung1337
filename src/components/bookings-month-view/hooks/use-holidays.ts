@@ -1,65 +1,49 @@
 /**
- * Custom hook for managing holiday data
+ * Custom hook for managing holiday data, refactored with TanStack Query
  */
-
-import { useState, useEffect, useCallback } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Holiday, ApiResponse } from '../types';
-import { toast } from 'sonner';
 
-interface UseHolidaysResult {
-  holidays: Map<string, string>;
-  loading: boolean;
-  error: string | null;
-  refetch: () => void;
-}
+// Helper function to fetch holidays
+const fetchHolidays = async (year: number, month: number): Promise<Map<string, string>> => {
+  const response = await fetch(`/api/holidays?year=${year}&month=${month}`);
 
-export function useHolidays(year: number, month: number): UseHolidaysResult {
-  const [holidays, setHolidays] = useState<Map<string, string>>(new Map());
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch holidays: ${response.status}`);
+  }
 
-  const fetchHolidays = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  const data: ApiResponse<Holiday[]> = await response.json();
+  const holidayMap = new Map<string, string>();
 
-    try {
-      const response = await fetch(`/api/holidays?year=${year}&month=${month}`, {
-        cache: 'force-cache'
-      });
+  const holidayList = Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [];
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch holidays: ${response.status}`);
-      }
+  for (const holiday of holidayList) {
+    // The date from the server is a full ISO string, but we only need the date part.
+    holidayMap.set(holiday.date.slice(0, 10), holiday.name);
+  }
 
-      const data: ApiResponse<Holiday[]> = await response.json();
-      const holidayMap = new Map<string, string>();
+  return holidayMap;
+};
 
-      const holidayList = Array.isArray(data.data) ? data.data :
-                         Array.isArray(data) ? data : [];
+export function useHolidays(year: number, month: number) {
+  const queryKey = ['holidays', year, month];
 
-      for (const holiday of holidayList) {
-        holidayMap.set(holiday.date, holiday.name);
-      }
-
-      setHolidays(holidayMap);
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
-      setError(errorMessage);
-      console.error('Error fetching holidays:', err);
-      // Don't show toast for holiday errors as they're not critical
-    } finally {
-      setLoading(false);
-    }
-  }, [year, month]);
-
-  useEffect(() => {
-    fetchHolidays();
-  }, [fetchHolidays]);
+  const {
+    data: holidays = new Map(),
+    isLoading: loading,
+    error,
+    refetch,
+  } = useQuery<Map<string, string>, Error>({
+    queryKey,
+    queryFn: () => fetchHolidays(year, month),
+    // Holidays don't change often, so we can use a long staleTime
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+  });
 
   return {
     holidays,
     loading,
-    error,
-    refetch: fetchHolidays
+    error: error?.message || null,
+    refetch,
   };
 }

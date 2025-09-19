@@ -42,17 +42,6 @@ export default function BookingsMonthView({
   const [year, setYear] = useState(initialYear || now.getFullYear());
   const [month, setMonth] = useState(initialMonth || (now.getMonth() + 1));
 
-  // State for creating new entries
-  const [creatingDay, setCreatingDay] = useState<string | null>(null);
-  const createBufferTemplate: CreateEntryBuffer = {
-    start: "08:00",
-    end: "16:00",
-    pause: "00:00",
-    note: "",
-    category: "REGULAR"
-  };
-  const [createBuffer, setCreateBuffer] = useState<CreateEntryBuffer>({ ...createBufferTemplate });
-
   // State for day details dialog
   const [sheetDay, setSheetDay] = useState<string | null>(null);
   const [dupDate, setDupDate] = useState<string>("");
@@ -108,7 +97,6 @@ export default function BookingsMonthView({
   const handleMonthChange = (newYear: number, newMonth: number) => {
     setYear(newYear);
     setMonth(newMonth);
-    setCreatingDay(null);
     setSheetDay(null);
     stopEditing();
   };
@@ -164,21 +152,8 @@ export default function BookingsMonthView({
       const endIso = endTime.toISOString();
 
       await updateEntry(lastEntry.id, { end_utc: endIso });
-    } else {
-      // Create new entry
-      const startIso = toISOString(day, "08:00");
-      const endTime = new Date(startIso);
-      endTime.setMinutes(endTime.getMinutes() + durationMinutes);
-      const endIso = endTime.toISOString();
-
-      await createEntry({
-        start_utc: startIso,
-        end_utc: endIso,
-        pause_total_minutes: 0,
-        note: "",
-        category: "REGULAR"
-      });
     }
+    // Create logic is now handled in DayRow
   };
 
   const handleCreateEntry = async (day: string, buffer: CreateEntryBuffer) => {
@@ -203,20 +178,7 @@ export default function BookingsMonthView({
       category: buffer.category
     };
 
-    const success = await createEntry(payload);
-    if (success) {
-      setCreatingDay(null);
-      setCreateBuffer({ ...createBufferTemplate });
-    }
-  };
-
-  const handleStartCreating = (day: string) => {
-    setCreatingDay(day);
-    setCreateBuffer({ ...createBufferTemplate });
-  };
-
-  const onUpdateCreateBuffer = (updates: Partial<CreateEntryBuffer>) => {
-    setCreateBuffer(prev => ({ ...prev, ...updates }));
+    await createEntry(payload);
   };
 
   // Calculate month totals
@@ -279,12 +241,7 @@ export default function BookingsMonthView({
                            onSaveTime={handleSaveTime}
                            onSavePause={handleSavePause}
                            onSaveDuration={handleSaveDuration}
-                           isCreating={creatingDay === day}
-                           createBuffer={createBuffer}
-                           onStartCreating={handleStartCreating}
                            onCreateSave={handleCreateEntry}
-                           onCreateCancel={() => setCreatingDay(null)}
-                           onUpdateCreateBuffer={onUpdateCreateBuffer}
                            onShowDetails={(day) => {
                              setSheetDay(day);
                              setDupDate(day);

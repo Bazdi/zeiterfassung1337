@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
-import PDFDocument from "pdfkit"
 import fs from "fs"
 import path from "path"
 
@@ -12,6 +11,7 @@ function hm(min: number) { const h = Math.floor(min/60); const m = min%60; retur
 
 export async function POST(request: NextRequest) {
   try {
+    const PDFDocument = (await import("pdfkit")).default
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
 
