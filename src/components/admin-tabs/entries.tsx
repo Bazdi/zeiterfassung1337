@@ -41,7 +41,7 @@ function EntryRow({
       <CardContent className="flex flex-col gap-3 pt-6">
         <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
           <span className="font-medium text-foreground">{formatDateTime(entry.start_utc)}</span>
-          <span className="text-muted-foreground">&ndash;</span>
+          <span className="text-muted-foreground">-</span>
           <span className="font-medium text-foreground">{entry.end_utc ? formatDateTime(entry.end_utc) : "Läuft"}</span>
           <Badge variant="secondary">{entry.category}</Badge>
           <span className="text-muted-foreground">{entry.user.username}</span>
