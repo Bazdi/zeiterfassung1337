@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Keine laufende Pause" }, { status: 400 })
     }
     const now = new Date()
-    const extraMinutes = Math.floor(Math.max(0, now.getTime() - openEntry.pause_started_utc.getTime()) / 60_000)
+    const extraMinutes = Math.round(Math.max(0, now.getTime() - openEntry.pause_started_utc.getTime()) / 60_000)
     const updated = await db.timeEntry.update({
       where: { id: openEntry.id },
       data: {

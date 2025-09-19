@@ -13,23 +13,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
     }
 
-    // Check if user already has an open time entry
-    const openEntry = await db.timeEntry.findFirst({
-      where: {
-        user_id: session.user.id,
-        end_utc: null,
-      },
-    })
-
-    if (openEntry) {
-      return NextResponse.json(
-        { error: "Sie haben bereits eine offene Zeitbuchung" },
-        { status: 400 }
-      )
-    }
-
     // Create new time entry + audit trail atomically
     const timeEntry = await db.$transaction(async (tx) => {
+      // Check if user already has an open time entry
+      const openEntry = await tx.timeEntry.findFirst({
+        where: {
+          user_id: session.user.id,
+          end_utc: null,
+        },
+      })
+
+      if (openEntry) {
+        // By throwing an error, the transaction will be rolled back.
+        throw new Error("Sie haben bereits eine offene Zeitbuchung");
+      }
+
       const created = await tx.timeEntry.create({
         data: {
           user_id: session.user.id,
@@ -63,6 +61,9 @@ export async function POST(request: NextRequest) {
       message: "Erfolgreich eingestempelt",
     })
   } catch (error) {
+    if (error instanceof Error && error.message === "Sie haben bereits eine offene Zeitbuchung") {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("Check-in error:", error)
     return NextResponse.json(
       { error: "Interner Serverfehler" },

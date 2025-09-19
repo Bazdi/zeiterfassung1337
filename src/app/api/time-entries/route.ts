@@ -97,49 +97,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check for overlapping entries (only if endDate is provided)
-    let overlappingEntries: any[] = []
-    if (endDate) {
-      overlappingEntries = await db.timeEntry.findMany({
-        where: {
-          user_id: session.user.id,
-          OR: [
-            {
-              AND: [
-                { start_utc: { lte: startDate } },
-                { end_utc: { gte: startDate } },
-              ],
-            },
-            {
-              AND: [
-                { start_utc: { lte: endDate } },
-                { end_utc: { gte: endDate } },
-              ],
-            },
-            {
-              AND: [
-                { start_utc: { gte: startDate } },
-                { end_utc: { lte: endDate } },
-              ],
-            },
-          ],
-        },
-      })
-    }
-
-    if (overlappingEntries.length > 0) {
-      return NextResponse.json(
-        { error: "Es gibt bereits eine überlappende Zeitbuchung" },
-        { status: 400 }
-      )
-    }
-
     // Calculate duration if end time is provided (round to nearest minute, min 1)
     const durationMinutes = endDate ?
       Math.max(1, Math.round((endDate.getTime() - startDate.getTime()) / 60000)) : null
 
     // Create time entry + audit log atomically
     const timeEntry = await db.$transaction(async (tx) => {
+      // Check for overlapping entries (only if endDate is provided)
+      if (endDate) {
+        const overlappingEntries = await tx.timeEntry.findMany({
+          where: {
+            user_id: session.user.id,
+            OR: [
+              {
+                AND: [
+                  { start_utc: { lte: startDate } },
+                  { end_utc: { gte: startDate } },
+                ],
+              },
+              {
+                AND: [
+                  { start_utc: { lte: endDate } },
+                  { end_utc: { gte: endDate } },
+                ],
+              },
+              {
+                AND: [
+                  { start_utc: { gte: startDate } },
+                  { end_utc: { lte: endDate } },
+                ],
+              },
+            ],
+          },
+        })
+        if (overlappingEntries.length > 0) {
+          throw new Error("Es gibt bereits eine überlappende Zeitbuchung");
+        }
+      }
       const created = await tx.timeEntry.create({
         data: {
           user_id: session.user.id,
@@ -180,6 +174,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(timeEntry)
   } catch (error) {
+    if (error instanceof Error && error.message === "Es gibt bereits eine überlappende Zeitbuchung") {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("Create time entry error:", error)
     return NextResponse.json(
       { error: "Interner Serverfehler" },

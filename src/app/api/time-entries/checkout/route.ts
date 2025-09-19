@@ -13,33 +13,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Nicht autorisiert" }, { status: 401 })
     }
 
-    // Find the open time entry
-    const openEntry = await db.timeEntry.findFirst({
-      where: {
-        user_id: session.user.id,
-        end_utc: null,
-      },
-    })
-
-    if (!openEntry) {
-      return NextResponse.json(
-        { error: "Keine offene Zeitbuchung gefunden" },
-        { status: 400 }
-      )
-    }
-
-    const endTime = new Date()
-    // Fetch latest pause fields
-    const fresh = await db.timeEntry.findUnique({
-      where: { id: openEntry.id },
-      select: { start_utc: true, pause_total_minutes: true, pause_started_utc: true }
-    })
-    const pausedMs = (fresh?.pause_total_minutes || 0) * 60_000 + (fresh?.pause_started_utc ? Math.max(0, endTime.getTime() - fresh.pause_started_utc.getTime()) : 0)
-    const rawMs = Math.max(0, endTime.getTime() - (fresh?.start_utc || openEntry.start_utc).getTime())
-    const netMinutes = Math.round(Math.max(0, rawMs - pausedMs) / 60_000)
-
-    // Update time entry + audit trail atomically
     const updatedEntry = await db.$transaction(async (tx) => {
+      // Find the open time entry
+      const openEntry = await tx.timeEntry.findFirst({
+        where: {
+          user_id: session.user.id,
+          end_utc: null,
+        },
+      })
+
+      if (!openEntry) {
+        throw new Error("Keine offene Zeitbuchung gefunden");
+      }
+
+      const endTime = new Date()
+      // Fetch latest pause fields
+      const fresh = await tx.timeEntry.findUnique({
+        where: { id: openEntry.id },
+        select: { start_utc: true, pause_total_minutes: true, pause_started_utc: true }
+      })
+      const pausedMs = (fresh?.pause_total_minutes || 0) * 60_000 + (fresh?.pause_started_utc ? Math.max(0, endTime.getTime() - fresh.pause_started_utc.getTime()) : 0)
+      const rawMs = Math.max(0, endTime.getTime() - (fresh?.start_utc || openEntry.start_utc).getTime())
+      const netMinutes = Math.round(Math.max(0, rawMs - pausedMs) / 60_000)
+
+      // Update time entry + audit trail atomically
       const updated = await tx.timeEntry.update({
         where: { id: openEntry.id },
         data: {
@@ -84,6 +81,9 @@ export async function POST(request: NextRequest) {
       message: "Erfolgreich ausgestempelt",
     })
   } catch (error) {
+    if (error instanceof Error && error.message === "Keine offene Zeitbuchung gefunden") {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
     console.error("Check-out error:", error)
     return NextResponse.json(
       { error: "Interner Serverfehler" },
